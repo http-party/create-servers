@@ -8,9 +8,11 @@ Create an http AND/OR an https server and call the same request handler.
 var createServers = require('create-servers');
 
 var servers = createServers(
-  { http: 80 },
-  function (req, res) {
-    res.end('http only');
+  {
+    http: 80,
+    handler: function (req, res) {
+      res.end('http only');
+    }
   },
   function (errs) {
     if (errs) {
@@ -32,10 +34,10 @@ var servers = createServers(
       key: 'your-key.pem',
       cert: 'your-cert.pem',
       ca: 'your-ca.pem' // Can be an Array of CAs
+    },
+    handler: function (req, res) {
+      res.end('https only');
     }
-  },
-  function (req, res) {
-    res.end('https only');
   },
   function (errs) {
     if (errs) {
@@ -58,10 +60,10 @@ var servers = createServers(
       key: 'your-key.pem',
       cert: 'your-cert.pem',
       ca: 'your-ca.pem' // Can be an Array of CAs
+    },
+    handler: function (req, res) {
+      res.end('http AND https');
     }
-  },
-  function (req, res) {
-    res.end('http AND https');
   },
   function (errs, servers) {
     if (errs) {
