@@ -4,7 +4,7 @@
   "description": "Create an http AND/OR an https server and call the same request handler.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Now accepting pull-requests.\""
+    "test": "node test/create-servers-test.js"
   },
   "repository": {
     "type": "git",
