@@ -74,3 +74,33 @@ test('http && https', function (t) {
     servers.https.close();
   });
 });
+
+test('http && https with different handlers', function (t) {
+  t.plan(4);
+  createServers({
+    log: console.log,
+    http: {
+      handler: function (req, res) {
+        res.end('http');
+      },
+      port: 8765
+    },
+    https: {
+      handler: function (req, res) {
+        res.end('https');
+      },
+      port: 3456,
+      root: path.join(__dirname, 'fixtures'),
+      cert: 'agent2-cert.pem',
+      key:  'agent2-key.pem'
+    },
+  }, function (err, servers) {
+    console.dir(err);
+    t.error(err);
+    t.equals(typeof servers, 'object');
+    t.equals(typeof servers.http, 'object');
+    t.equals(typeof servers.https, 'object');
+    servers.http.close();
+    servers.https.close();
+  });
+});

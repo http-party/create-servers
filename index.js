@@ -17,7 +17,8 @@ var fs = require('fs'),
 // Creates and listens on both HTTP and HTTPS servers.
 //
 module.exports = function createServers(options, listening) {
-  if (!options || (!options.http && !options.https) || !options.handler) {
+  if (!options || (!options.http && !options.https)
+      || (!options.handler && !options.http.handler && !options.https.handler)) {
     return listening(new Error('handler, http and/or https are required options.'));
   }
 
@@ -67,10 +68,19 @@ module.exports = function createServers(options, listening) {
       return onListen('http');
     }
 
-    var port = options.http || options.http.port || 80;
-    log('http | try listen ' + port);
+    if (typeof options.http !== 'object') {
+      options.http = {
+        port: typeof options.http === 'number'
+          ? options.http
+          : false
+      };
+    }
 
-    connected(http.createServer(handler), port, function (err) {
+    var server = http.createServer(options.http.handler || handler),
+        port   = options.http.port || 80;
+
+    log('http | try listen ' + port);
+    connected(server, port, function (err) {
       onListen('http', err, this);
     });
   }
@@ -102,7 +112,7 @@ module.exports = function createServers(options, listening) {
           return fs.readFileSync(path.join(ssl.root, file));
         }
       )
-    }, handler);
+    }, ssl.handler || handler);
 
     connected(server, port, function (err) {
       onListen('https', err, this);
