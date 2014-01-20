@@ -16,12 +16,13 @@ var fs = require('fs'),
 // ### function createServers (dispatch, options, callback)
 // Creates and listens on both HTTP and HTTPS servers.
 //
-module.exports = function createServers(options, handler, listening) {
-  if (!options || (!options.http && !options.https)) {
-    return listening(new Error('options.http and/or options.https are required.'));
+module.exports = function createServers(options, listening) {
+  if (!options || (!options.http && !options.https) || !options.handler) {
+    return listening(new Error('handler, http and/or https are required options.'));
   }
 
-  var log     = options.log || function () { },
+  var handler = options.handler,
+      log     = options.log || function () { },
       errors  = {},
       servers = {},
       errState;

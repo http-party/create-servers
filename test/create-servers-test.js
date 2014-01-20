@@ -21,8 +21,9 @@ test('only http', function (t) {
   t.plan(3);
   createServers({
     log: console.log,
-    http: 9876
-  }, fend, function (err, servers) {
+    http: 9876,
+    handler: fend
+  }, function (err, servers) {
     console.dir(err);
     t.error(err);
     t.equals(typeof servers, 'object');
@@ -40,8 +41,9 @@ test('only https', function (t) {
       root: path.join(__dirname, 'fixtures'),
       cert: 'agent2-cert.pem',
       key:  'agent2-key.pem'
-    }
-  }, fend, function (err, servers) {
+    },
+    handler: fend
+  }, function (err, servers) {
     console.dir(err);
     t.error(err);
     t.equals(typeof servers, 'object');
@@ -60,8 +62,9 @@ test('http && https', function (t) {
       root: path.join(__dirname, 'fixtures'),
       cert: 'agent2-cert.pem',
       key:  'agent2-key.pem'
-    }
-  }, fend, function (err, servers) {
+    },
+    handler: fend
+  }, function (err, servers) {
     console.dir(err);
     t.error(err);
     t.equals(typeof servers, 'object');
