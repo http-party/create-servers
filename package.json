@@ -1,6 +1,6 @@
 {
   "name": "create-servers",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Create an http AND/OR an https server and call the same request handler.",
   "main": "index.js",
   "scripts": {
