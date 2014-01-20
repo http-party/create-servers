@@ -80,5 +80,41 @@ var servers = createServers(
 );
 ```
 
+**http && http (different handlers)s**
+``` js
+var servers = createServers(
+  {
+    http: {
+      port: 80,
+      handler: function (req, res) {
+        res.end('http');
+      }
+    },
+    https: {
+      port: 443,
+      root: '/path/to/ssl/files',
+      key: 'your-key.pem',
+      cert: 'your-cert.pem',
+      ca: 'your-ca.pem', // Can be an Array of CAs
+      handler: function (req, res) {
+        res.end('https');
+      }
+    }
+  },
+  function (errs, servers) {
+    if (errs) {
+      return Object.keys(errs).forEach(function (key) {
+        console.log('Error ' + key + ': ' + errs[key]);
+        if (servers[key]) {
+          servers[key].close();
+        }
+      });
+    }
+
+    console.log('Listening on 80 and 443');
+  }
+);
+```
+
 ### Author: [Charlie Robbins](https://github.com/indexzero)
 ### License: MIT
