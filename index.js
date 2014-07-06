@@ -91,7 +91,7 @@ module.exports = function createServers(options, listening) {
   //
   function createHttps(next) {
     if (!options.https) {
-      console.log('https | no options.https; no server')
+      log('https | no options.https; no server')
       return onListen('https');
     }
 
@@ -103,7 +103,7 @@ module.exports = function createServers(options, listening) {
       ssl.ca = [ssl.ca];
     }
 
-    console.log('https | listening on %d', port);
+    log('https | listening on %d', port);
     server = https.createServer({
       key:  fs.readFileSync(path.join(ssl.root, ssl.key)),
       cert: fs.readFileSync(path.join(ssl.root, ssl.cert)),
