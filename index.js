@@ -77,12 +77,18 @@ module.exports = function createServers(options, listening) {
     }
 
     var server = http.createServer(options.http.handler || handler),
-        port   = options.http.port || 80;
+        port   = options.http.port || 80,
+        ip,
+        listener = function (err) {
+          onListen('http', err, this);
+        };
+
+    connectedArgs = [server, port];
+    if (ip = options.http.ip) connectedArgs.push(ip);
+    connectedArgs.push(listener);
 
     log('http | try listen ' + port);
-    connected(server, port, function (err) {
-      onListen('http', err, this);
-    });
+    connected.apply(null, connectedArgs);
   }
 
   //
@@ -97,7 +103,11 @@ module.exports = function createServers(options, listening) {
 
     var port = options.https.port || 443,
         ssl  = options.https,
-        server;
+        server,
+        ip,
+        listener = function (err) {
+          onListen('https', err, this);
+        };
 
     if (ssl.ca && !Array.isArray(ssl.ca)) {
       ssl.ca = [ssl.ca];
@@ -114,9 +124,10 @@ module.exports = function createServers(options, listening) {
       )
     }, ssl.handler || handler);
 
-    connected(server, port, function (err) {
-      onListen('https', err, this);
-    });
+    connectedArgs = [server, port];
+    if (ip = options.https.ip) connectedArgs.push(ip);
+    connectedArgs.push(listener);
+    connected.apply(null, connectedArgs);
   }
 
   [createHttp, createHttps]
