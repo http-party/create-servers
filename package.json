@@ -1,6 +1,6 @@
 {
   "name": "create-servers",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Create an http AND/OR an https server and call the same request handler.",
   "main": "index.js",
   "scripts": {
@@ -22,10 +22,10 @@
   },
   "homepage": "https://github.com/indexzero/create-servers",
   "dependencies": {
-    "connected": "0.0.0",
+    "connected": "~0.0.2",
     "errs": "~0.3.0"
   },
   "devDependencies": {
-    "tape": "~2.3.2"
+    "tape": "~2.14.0"
   }
 }
