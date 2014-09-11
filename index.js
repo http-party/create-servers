@@ -78,17 +78,17 @@ module.exports = function createServers(options, listening) {
 
     var server = http.createServer(options.http.handler || handler),
         port   = options.http.port || 80,
-        ip,
-        listener = function (err) {
-          onListen('http', err, this);
-        };
+        args,
+        ip;
 
-    connectedArgs = [server, port];
-    if (ip = options.http.ip) connectedArgs.push(ip);
-    connectedArgs.push(listener);
+    args = [server, port];
+    if (ip === options.http.ip) {
+      args.push(ip);
+    }
 
     log('http | try listen ' + port);
-    connected.apply(null, connectedArgs);
+    args.push(function listener(err) { onListen('http', err, this); });
+    connected.apply(null, args);
   }
 
   //
@@ -104,10 +104,8 @@ module.exports = function createServers(options, listening) {
     var port = options.https.port || 443,
         ssl  = options.https,
         server,
-        ip,
-        listener = function (err) {
-          onListen('https', err, this);
-        };
+        args,
+        ip;
 
     if (ssl.ca && !Array.isArray(ssl.ca)) {
       ssl.ca = [ssl.ca];
@@ -124,10 +122,13 @@ module.exports = function createServers(options, listening) {
       )
     }, ssl.handler || handler);
 
-    connectedArgs = [server, port];
-    if (ip = options.https.ip) connectedArgs.push(ip);
-    connectedArgs.push(listener);
-    connected.apply(null, connectedArgs);
+    args = [server, port];
+    if (ip === options.https.ip) {
+      args.push(ip);
+    }
+
+    args.push(function listener(err) { onListen('https', err, this); });
+    connected.apply(null, args);
   }
 
   [createHttp, createHttps]
