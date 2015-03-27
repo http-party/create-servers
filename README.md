@@ -80,7 +80,7 @@ var servers = createServers(
 );
 ```
 
-**http && http (different handlers)s**
+**http && https (different handlers)**
 ``` js
 var servers = createServers(
   {
