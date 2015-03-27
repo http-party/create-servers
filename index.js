@@ -71,7 +71,7 @@ module.exports = function createServers(options, listening) {
     if (typeof options.http !== 'object') {
       options.http = {
         // accept both a string and a number
-        port: (!isNaN(options.http))
+        port: !isNaN(options.http)
           ? +options.http
           : false
       };
