@@ -70,8 +70,9 @@ module.exports = function createServers(options, listening) {
 
     if (typeof options.http !== 'object') {
       options.http = {
-        port: typeof options.http === 'number'
-          ? options.http
+        // accept both a string and a number
+        port: !isNaN(options.http)
+          ? +options.http
           : false
       };
     }
@@ -101,7 +102,7 @@ module.exports = function createServers(options, listening) {
       return onListen('https');
     }
 
-    var port = options.https.port || 443,
+    var port = +options.https.port || 443,
         ssl  = options.https,
         server,
         args,

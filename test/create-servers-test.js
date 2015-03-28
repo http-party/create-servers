@@ -103,4 +103,19 @@ test('http && https with different handlers', function (t) {
     servers.http.close();
     servers.https.close();
   });
+
+  test('only http with string type input for http port', function (t) {
+    t.plan(3);
+    createServers({
+      log: console.log,
+      http: "9876",
+      handler: fend
+    }, function (err, servers) {
+      console.dir(err);
+      t.error(err);
+      t.equals(typeof servers, 'object');
+      t.equals(typeof servers.http, 'object');
+      servers.http.close();
+    });
+  });
 });
