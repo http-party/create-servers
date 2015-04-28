@@ -75,6 +75,26 @@ test('http && https', function (t) {
   });
 });
 
+test('provides useful debug information', function (t) {
+  t.plan(5);
+  createServers({
+    log: console.log,
+    https: {
+      port: 443,
+      root: path.join(__dirname, 'fixtures'),
+      cert: 'agent2-cert.pem',
+      key:  'agent2-key.pem'
+    },
+    handler: fend
+  }, function (err, servers) {
+    t.equals(typeof servers, 'object');
+    t.equals(typeof err, 'object');
+    t.equals(typeof err.https, 'object');
+    t.equals(typeof err.message, 'string');
+    t.notEqual(err.message, 'Unspecified error');
+  });
+});
+
 test('http && https with different handlers', function (t) {
   t.plan(4);
   createServers({

@@ -1,3 +1,5 @@
+'use strict';
+
 /*
  * index.js: Create an http AND/OR an https server and call the same request handler.
  *
@@ -45,10 +47,11 @@ module.exports = function createServers(options, listening) {
           if (typeof servers[key] === 'boolean') {
             delete servers[key];
           }
-        })
+        });
 
       if (errors.http || errors.https) {
         return listening(errs.create({
+          message: (errors.https || errors.http).message,
           https: errors.https,
           http:  errors.http,
         }), servers);
@@ -64,7 +67,7 @@ module.exports = function createServers(options, listening) {
   //
   function createHttp() {
     if (!options.http) {
-      log('http | no options.http; no server')
+      log('http | no options.http; no server');
       return onListen('http');
     }
 
@@ -98,7 +101,7 @@ module.exports = function createServers(options, listening) {
   //
   function createHttps(next) {
     if (!options.https) {
-      log('https | no options.https; no server')
+      log('https | no options.https; no server');
       return onListen('https');
     }
 
