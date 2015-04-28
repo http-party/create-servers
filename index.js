@@ -51,6 +51,7 @@ module.exports = function createServers(options, listening) {
 
       if (errors.http || errors.https) {
         return listening(errs.create({
+          message: (errors.https || errors.http).message,
           https: errors.https,
           http:  errors.http,
         }), servers);
