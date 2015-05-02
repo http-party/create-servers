@@ -14,6 +14,25 @@ var fs = require('fs'),
     connected = require('connected'),
     errs = require('errs');
 
+var CIPHERS = [
+  'ECDHE-RSA-AES256-SHA384',
+  'DHE-RSA-AES256-SHA384',
+  'ECDHE-RSA-AES256-SHA256',
+  'DHE-RSA-AES256-SHA256',
+  'ECDHE-RSA-AES128-SHA256',
+  'DHE-RSA-AES128-SHA256',
+  'HIGH',
+  '!aNULL',
+  '!eNULL',
+  '!EXPORT',
+  '!DES',
+  '!RC4',
+  '!MD5',
+  '!PSK',
+  '!SRP',
+  '!CAMELLIA'
+].join(':');
+
 //
 // ### function createServers (dispatch, options, callback)
 // Creates and listens on both HTTP and HTTPS servers.
@@ -111,6 +130,15 @@ module.exports = function createServers(options, listening) {
         args,
         ip;
 
+    ssl.ciphers = ssl.ciphers || CIPHERS;
+
+    //
+    // Remark: If an array is passed in lets join it like we do the defaults
+    //
+    if (Array.isArray(ssl.ciphers)) {
+      ssl.ciphers = ssl.ciphers.join(':');
+    }
+
     if (ssl.ca && !Array.isArray(ssl.ca)) {
       ssl.ca = [ssl.ca];
     }
@@ -123,7 +151,9 @@ module.exports = function createServers(options, listening) {
         function (file) {
           return fs.readFileSync(path.join(ssl.root, file));
         }
-      )
+      ),
+      ciphers: ssl.ciphers,
+      honorCipherOrder: ssl.honorCipherOrder === false ? false : true
     }, ssl.handler || handler);
 
     args = [server, port];
