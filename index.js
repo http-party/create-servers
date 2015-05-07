@@ -145,6 +145,9 @@ module.exports = function createServers(options, listening) {
 
     log('https | listening on %d', port);
     server = https.createServer({
+      //
+      // Load default SSL key, cert and ca(s).
+      //
       key:  fs.readFileSync(path.join(ssl.root, ssl.key)),
       cert: fs.readFileSync(path.join(ssl.root, ssl.cert)),
       ca:   ssl.ca && ssl.ca.map(
@@ -152,8 +155,22 @@ module.exports = function createServers(options, listening) {
           return fs.readFileSync(path.join(ssl.root, file));
         }
       ),
+      //
+      // Properly expose ciphers for an A+ SSL rating:
+      // https://certsimple.com/blog/a-plus-node-js-ssl
+      //
       ciphers: ssl.ciphers,
-      honorCipherOrder: ssl.honorCipherOrder === false ? false : true
+      honorCipherOrder: ssl.honorCipherOrder === false ? false : true,
+      //
+      // Optionally support SNI-based SSL.
+      //
+      SNICallback: ssl.SNICallback,
+      //
+      // Protect against the POODLE attack by disabling SSLv3
+      // @see http://googleonlinesecurity.blogspot.nl/2014/10/this-poodle-bites-exploiting-ssl-30.html
+      //
+      secureProtocol: 'SSLv23_method',
+      secureOptions: require('constants').SSL_OP_NO_SSLv3
     }, ssl.handler || handler);
 
     args = [server, port];
