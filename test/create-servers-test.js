@@ -128,13 +128,33 @@ test('http && https with different handlers', function (t) {
     t.plan(3);
     createServers({
       log: console.log,
-      http: "9876",
+      http: '9876',
       handler: fend
     }, function (err, servers) {
       console.dir(err);
       t.error(err);
       t.equals(typeof servers, 'object');
       t.equals(typeof servers.http, 'object');
+      servers.http.close();
+    });
+  });
+
+  test('host can be provided to the server', function (t) {
+    t.plan(4);
+    createServers({
+      log: console.log,
+      http: {
+        port: 9877,
+        host: '127.0.0.1'
+      },
+      handler: fend
+    }, function (err, servers) {
+      console.dir(err);
+      t.error(err);
+      t.equals(typeof servers, 'object');
+      t.equals(typeof servers.http, 'object');
+      t.equals(servers.http.address().address, '127.0.0.1');
+
       servers.http.close();
     });
   });

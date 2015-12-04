@@ -46,8 +46,7 @@ module.exports = function createServers(options, listening) {
   var handler = options.handler,
       log     = options.log || function () { },
       errors  = {},
-      servers = {},
-      errState;
+      servers = {};
 
   //
   // ### function onListen(type, err, server)
@@ -72,7 +71,7 @@ module.exports = function createServers(options, listening) {
         return listening(errs.create({
           message: (errors.https || errors.http).message,
           https: errors.https,
-          http:  errors.http,
+          http:  errors.http
         }), servers);
       }
 
@@ -101,12 +100,11 @@ module.exports = function createServers(options, listening) {
 
     var server = http.createServer(options.http.handler || handler),
         port   = options.http.port || 80,
-        args,
-        ip;
+        args;
 
     args = [server, port];
-    if (ip === options.http.ip) {
-      args.push(ip);
+    if (options.http.host) {
+      args.push(options.http.host);
     }
 
     log('http | try listen ' + port);
@@ -160,7 +158,7 @@ module.exports = function createServers(options, listening) {
       // https://certsimple.com/blog/a-plus-node-js-ssl
       //
       ciphers: ssl.ciphers,
-      honorCipherOrder: ssl.honorCipherOrder === false ? false : true,
+      honorCipherOrder: !!ssl.honorCipherOrder,
       //
       // Optionally support SNI-based SSL.
       //
@@ -174,8 +172,8 @@ module.exports = function createServers(options, listening) {
     }, ssl.handler || handler);
 
     args = [server, port];
-    if (ip === options.https.ip) {
-      args.push(ip);
+    if (options.https.host) {
+      args.push(options.https.host);
     }
 
     args.push(function listener(err) { onListen('https', err, this); });
