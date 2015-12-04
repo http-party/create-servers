@@ -100,12 +100,11 @@ module.exports = function createServers(options, listening) {
 
     var server = http.createServer(options.http.handler || handler),
         port   = options.http.port || 80,
-        args,
-        ip;
+        args;
 
     args = [server, port];
-    if (ip === options.http.ip) {
-      args.push(ip);
+    if (options.http.host) {
+      args.push(options.http.host);
     }
 
     log('http | try listen ' + port);
@@ -173,8 +172,8 @@ module.exports = function createServers(options, listening) {
     }, ssl.handler || handler);
 
     args = [server, port];
-    if (ip === options.https.ip) {
-      args.push(ip);
+    if (options.https.host) {
+      args.push(options.https.host);
     }
 
     args.push(function listener(err) { onListen('https', err, this); });
