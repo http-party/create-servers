@@ -46,8 +46,7 @@ module.exports = function createServers(options, listening) {
   var handler = options.handler,
       log     = options.log || function () { },
       errors  = {},
-      servers = {},
-      errState;
+      servers = {};
 
   //
   // ### function onListen(type, err, server)
@@ -72,7 +71,7 @@ module.exports = function createServers(options, listening) {
         return listening(errs.create({
           message: (errors.https || errors.http).message,
           https: errors.https,
-          http:  errors.http,
+          http:  errors.http
         }), servers);
       }
 
@@ -160,7 +159,7 @@ module.exports = function createServers(options, listening) {
       // https://certsimple.com/blog/a-plus-node-js-ssl
       //
       ciphers: ssl.ciphers,
-      honorCipherOrder: ssl.honorCipherOrder === false ? false : true,
+      honorCipherOrder: !!ssl.honorCipherOrder,
       //
       // Optionally support SNI-based SSL.
       //
