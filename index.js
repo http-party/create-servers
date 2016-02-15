@@ -146,11 +146,11 @@ module.exports = function createServers(options, listening) {
       //
       // Load default SSL key, cert and ca(s).
       //
-      key:  fs.readFileSync(path.join(ssl.root, ssl.key)),
-      cert: fs.readFileSync(path.join(ssl.root, ssl.cert)),
+      key:  fs.readFileSync(path.resolve(ssl.root, ssl.key)),
+      cert: fs.readFileSync(path.resolve(ssl.root, ssl.cert)),
       ca:   ssl.ca && ssl.ca.map(
         function (file) {
-          return fs.readFileSync(path.join(ssl.root, file));
+          return fs.readFileSync(path.resolve(ssl.root, file));
         }
       ),
       //

@@ -52,6 +52,26 @@ test('only https', function (t) {
   });
 });
 
+test('absolute cert path resolution', function (t) {
+  t.plan(3);
+  createServers({
+    log: console.log,
+    https: {
+      port: 3456,
+      root: '/',
+      cert: path.resolve(__dirname, 'fixtures', 'agent2-cert.pem'),
+      key:  path.resolve(__dirname, 'fixtures', 'agent2-key.pem')
+    },
+    handler: fend
+  }, function (err, servers) {
+    console.dir(err);
+    t.error(err);
+    t.equals(typeof servers, 'object');
+    t.equals(typeof servers.https, 'object');
+    servers.https.close();
+  });
+});
+
 test('http && https', function (t) {
   t.plan(4);
   createServers({
