@@ -44,7 +44,6 @@ test('only https', function (t) {
     },
     handler: fend
   }, function (err, servers) {
-    console.dir(err);
     t.error(err);
     t.equals(typeof servers, 'object');
     t.equals(typeof servers.https, 'object');
@@ -64,7 +63,6 @@ test('absolute cert path resolution', function (t) {
     },
     handler: fend
   }, function (err, servers) {
-    console.dir(err);
     t.error(err);
     t.equals(typeof servers, 'object');
     t.equals(typeof servers.https, 'object');
@@ -85,7 +83,6 @@ test('http && https', function (t) {
     },
     handler: fend
   }, function (err, servers) {
-    console.dir(err);
     t.error(err);
     t.equals(typeof servers, 'object');
     t.equals(typeof servers.http, 'object');
@@ -135,7 +132,6 @@ test('http && https with different handlers', function (t) {
       key:  'agent2-key.pem'
     },
   }, function (err, servers) {
-    console.dir(err);
     t.error(err);
     t.equals(typeof servers, 'object');
     t.equals(typeof servers.http, 'object');
@@ -151,7 +147,6 @@ test('http && https with different handlers', function (t) {
       http: '9876',
       handler: fend
     }, function (err, servers) {
-      console.dir(err);
       t.error(err);
       t.equals(typeof servers, 'object');
       t.equals(typeof servers.http, 'object');
@@ -169,7 +164,6 @@ test('http && https with different handlers', function (t) {
       },
       handler: fend
     }, function (err, servers) {
-      console.dir(err);
       t.error(err);
       t.equals(typeof servers, 'object');
       t.equals(typeof servers.http, 'object');
