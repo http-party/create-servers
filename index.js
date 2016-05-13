@@ -12,7 +12,8 @@ var fs = require('fs'),
     https = require('https'),
     path = require('path'),
     connected = require('connected'),
-    errs = require('errs');
+    errs = require('errs'),
+    assign = require('object-assign');
 
 var CIPHERS = [
   'ECDHE-RSA-AES256-SHA384',
@@ -143,7 +144,7 @@ module.exports = function createServers(options, listening) {
       ca = [ca];
     }
 
-    var finalHttpsOptions = Object.assign({}, ssl, {
+    var finalHttpsOptions = assign({}, ssl, {
       //
       // Load default SSL key, cert and ca(s).
       //
