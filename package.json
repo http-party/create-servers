@@ -23,9 +23,11 @@
   "homepage": "https://github.com/indexzero/create-servers",
   "dependencies": {
     "connected": "~0.0.2",
-    "errs": "~0.3.0"
+    "errs": "~0.3.0",
+    "object-assign": "^4.1.0"
   },
   "devDependencies": {
+    "sinon": "^1.17.4",
     "tape": "~2.14.0"
   }
 }
