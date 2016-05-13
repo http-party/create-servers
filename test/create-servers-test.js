@@ -7,7 +7,9 @@
 
 var path = require('path'),
     http = require('http'),
+    https = require('https'),
     test = require('tape'),
+    sinon = require('sinon'),
     createServers = require('../');
 
 //
@@ -171,5 +173,26 @@ test('http && https with different handlers', function (t) {
 
       servers.http.close();
     });
+  });
+});
+
+test('supports requestCert https option', function (t) {
+  t.plan(2);
+  var spy = sinon.spy(https, 'createServer');
+  createServers({
+    log: console.log,
+    https: {
+      port:        3456,
+      root:        path.join(__dirname, 'fixtures'),
+      cert:        'agent2-cert.pem',
+      key:         'agent2-key.pem',
+      requestCert: true
+    },
+    handler: fend
+  }, function (err, servers) {
+    t.error(err);
+    t.equals(spy.lastCall.args[0].requestCert, true, 'should preserve the requestCert option');
+    servers.https.close();
+    spy.restore();
   });
 });

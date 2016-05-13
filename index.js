@@ -122,54 +122,54 @@ module.exports = function createServers(options, listening) {
       return onListen('https');
     }
 
-    var port = +options.https.port || 443,
-        ssl  = options.https,
+    var ssl  = options.https,
+        port = +ssl.port || 443,
+        ciphers = ssl.ciphers || CIPHERS,
+        ca = ssl.ca,
+        key = fs.readFileSync(path.resolve(ssl.root, ssl.key)),
+        cert = fs.readFileSync(path.resolve(ssl.root, ssl.cert)),
+        honorCipherOrder = !!ssl.honorCipherOrder,
         server,
-        args,
-        ip;
-
-    ssl.ciphers = ssl.ciphers || CIPHERS;
+        args;
 
     //
     // Remark: If an array is passed in lets join it like we do the defaults
     //
-    if (Array.isArray(ssl.ciphers)) {
-      ssl.ciphers = ssl.ciphers.join(':');
+    if (Array.isArray(ciphers)) {
+      ciphers = ciphers.join(':');
     }
 
-    if (ssl.ca && !Array.isArray(ssl.ca)) {
-      ssl.ca = [ssl.ca];
+    if (ca && !Array.isArray(ca)) {
+      ca = [ca];
     }
 
-    log('https | listening on %d', port);
-    server = https.createServer({
+    var finalHttpsOptions = Object.assign({}, ssl, {
       //
       // Load default SSL key, cert and ca(s).
       //
-      key:  fs.readFileSync(path.resolve(ssl.root, ssl.key)),
-      cert: fs.readFileSync(path.resolve(ssl.root, ssl.cert)),
-      ca:   ssl.ca && ssl.ca.map(
-        function (file) {
-          return fs.readFileSync(path.resolve(ssl.root, file));
-        }
+      key: key,
+      cert: cert,
+      ca: ca && ca.map(
+          function (file) {
+            return fs.readFileSync(path.resolve(ssl.root, file));
+          }
       ),
       //
       // Properly expose ciphers for an A+ SSL rating:
       // https://certsimple.com/blog/a-plus-node-js-ssl
       //
-      ciphers: ssl.ciphers,
-      honorCipherOrder: !!ssl.honorCipherOrder,
-      //
-      // Optionally support SNI-based SSL.
-      //
-      SNICallback: ssl.SNICallback,
+      ciphers: ciphers,
+      honorCipherOrder: honorCipherOrder,
       //
       // Protect against the POODLE attack by disabling SSLv3
       // @see http://googleonlinesecurity.blogspot.nl/2014/10/this-poodle-bites-exploiting-ssl-30.html
       //
       secureProtocol: 'SSLv23_method',
       secureOptions: require('constants').SSL_OP_NO_SSLv3
-    }, ssl.handler || handler);
+    });
+
+    log('https | listening on %d', port);
+    server = https.createServer(finalHttpsOptions, ssl.handler || handler);
 
     args = [server, port];
     if (options.https.host) {
