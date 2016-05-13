@@ -15,6 +15,8 @@ var fs = require('fs'),
     errs = require('errs'),
     assign = require('object-assign');
 
+var pemFormat = /-----BEGIN/;
+
 var CIPHERS = [
   'ECDHE-RSA-AES256-SHA384',
   'DHE-RSA-AES256-SHA384',
@@ -34,10 +36,10 @@ var CIPHERS = [
   '!CAMELLIA'
 ].join(':');
 
-//
-// ### function createServers (dispatch, options, callback)
-// Creates and listens on both HTTP and HTTPS servers.
-//
+/**
+ * function createServers (dispatch, options, callback)
+ * Creates and listens on both HTTP and HTTPS servers.
+ */
 module.exports = function createServers(options, listening) {
   if (!options || (!options.http && !options.https)
       || (!options.handler && !options.http.handler && !options.https.handler)) {
@@ -178,11 +180,18 @@ module.exports = function createServers(options, listening) {
     .forEach(function (fn) { fn(); });
 };
 
-var pemFormat = /-----BEGIN/;
-
+/**
+ * function normalizeCertFile(root, file)
+ * Returns the contents of `file` verbatim if it is determined to be
+ * certificate material and not a file path. Otherwise, returns the
+ * certificate material read from that file path.
+ */
 function normalizeCertFile(root, file) {
+  //
+  // Assumption that this is a Buffer, a PEM file, or something broken
+  //
   if (typeof(file) !== 'string' || pemFormat.test(file)) {
-    return file; // Assumption that this is a Buffer, a PEM file, or something broken
+    return file;
   }
 
   return fs.readFileSync(path.resolve(root, file));
