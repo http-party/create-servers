@@ -127,9 +127,6 @@ module.exports = function createServers(options, listening) {
         port = +ssl.port || 443,
         ciphers = ssl.ciphers || CIPHERS,
         ca = ssl.ca,
-        key = fs.readFileSync(path.resolve(ssl.root, ssl.key)),
-        cert = fs.readFileSync(path.resolve(ssl.root, ssl.cert)),
-        honorCipherOrder = !!ssl.honorCipherOrder,
         server,
         args;
 
@@ -148,8 +145,8 @@ module.exports = function createServers(options, listening) {
       //
       // Load default SSL key, cert and ca(s).
       //
-      key: key,
-      cert: cert,
+      key: fs.readFileSync(path.resolve(ssl.root, ssl.key)),
+      cert: fs.readFileSync(path.resolve(ssl.root, ssl.cert)),
       ca: ca && ca.map(
           function (file) {
             return fs.readFileSync(path.resolve(ssl.root, file));
@@ -160,7 +157,7 @@ module.exports = function createServers(options, listening) {
       // https://certsimple.com/blog/a-plus-node-js-ssl
       //
       ciphers: ciphers,
-      honorCipherOrder: honorCipherOrder,
+      honorCipherOrder: !!ssl.honorCipherOrder,
       //
       // Protect against the POODLE attack by disabling SSLv3
       // @see http://googleonlinesecurity.blogspot.nl/2014/10/this-poodle-bites-exploiting-ssl-30.html
