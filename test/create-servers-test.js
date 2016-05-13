@@ -6,6 +6,7 @@
  */
 
 var path = require('path'),
+    fs = require('fs'),
     http = require('http'),
     https = require('https'),
     test = require('tape'),
@@ -173,6 +174,26 @@ test('http && https with different handlers', function (t) {
 
       servers.http.close();
     });
+  });
+});
+
+test('supports cert contents instead of cert paths', function (t) {
+  t.plan(3);
+  var root = path.join(__dirname, 'fixtures');
+  createServers({
+    log: console.log,
+    https: {
+      port: 3456,
+      root: root,
+      cert: fs.readFileSync(path.resolve(root, 'agent2-cert.pem')),
+      key:  fs.readFileSync(path.resolve(root, 'agent2-key.pem'))
+    },
+    handler: fend
+  }, function (err, servers) {
+    t.error(err);
+    t.equals(typeof servers, 'object');
+    t.equals(typeof servers.https, 'object');
+    servers.https.close();
   });
 });
 
