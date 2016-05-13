@@ -145,13 +145,9 @@ module.exports = function createServers(options, listening) {
       //
       // Load default SSL key, cert and ca(s).
       //
-      key: fs.readFileSync(path.resolve(ssl.root, ssl.key)),
-      cert: fs.readFileSync(path.resolve(ssl.root, ssl.cert)),
-      ca: ca && ca.map(
-          function (file) {
-            return fs.readFileSync(path.resolve(ssl.root, file));
-          }
-      ),
+      key: normalizeCertFile(ssl.root, ssl.key),
+      cert: normalizeCertFile(ssl.root, ssl.cert),
+      ca: ca && ca.map(normalizeCertFile.bind(null, ssl.root)),
       //
       // Properly expose ciphers for an A+ SSL rating:
       // https://certsimple.com/blog/a-plus-node-js-ssl
@@ -181,3 +177,13 @@ module.exports = function createServers(options, listening) {
   [createHttp, createHttps]
     .forEach(function (fn) { fn(); });
 };
+
+var pemFormat = /-----BEGIN/;
+
+function normalizeCertFile(root, file) {
+  if (typeof(file) !== 'string' || pemFormat.test(file)) {
+    return file; // Assumption that this is a Buffer, a PEM file, or something broken
+  }
+
+  return fs.readFileSync(path.resolve(root, file));
+}
