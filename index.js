@@ -41,7 +41,8 @@ var CIPHERS = [
  * Creates and listens on both HTTP and HTTPS servers.
  */
 module.exports = function createServers(options, listening) {
-  if (!options || (!options.http && !options.https)
+  if (!options
+      || (typeof options.http === 'undefined' && typeof options.https === 'undefined')
       || (!options.handler && !options.http.handler && !options.https.handler)) {
     return listening(new Error('handler, http and/or https are required options.'));
   }
@@ -87,22 +88,19 @@ module.exports = function createServers(options, listening) {
   // Attempts to create and listen on the the HTTP server.
   //
   function createHttp() {
-    if (!options.http) {
+    if (typeof options.http === 'undefined') {
       log('http | no options.http; no server');
       return onListen('http');
     }
 
     if (typeof options.http !== 'object') {
       options.http = {
-        // accept both a string and a number
-        port: !isNaN(options.http)
-          ? +options.http
-          : false
+        port: options.http
       };
     }
 
     var server = http.createServer(options.http.handler || handler),
-        port   = options.http.port || 80,
+        port   = !isNaN(options.http.port) ? +options.http.port : 80, // accepts string or number
         args;
 
     args = [server, port];
@@ -120,13 +118,13 @@ module.exports = function createServers(options, listening) {
   // Attempts to create and listen on the HTTPS server.
   //
   function createHttps(next) {
-    if (!options.https) {
+    if (typeof options.https === 'undefined') {
       log('https | no options.https; no server');
       return onListen('https');
     }
 
     var ssl  = options.https,
-        port = +ssl.port || 443,
+        port = !isNaN(ssl.port) ? +ssl.port : 443,  // accepts string or number
         ciphers = ssl.ciphers || CIPHERS,
         ca = ssl.ca,
         server,
