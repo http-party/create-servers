@@ -35,6 +35,23 @@ test('only http', function (t) {
   });
 });
 
+test('only http, port 0', function (t) {
+  t.plan(4);
+  createServers({
+    log: console.log,
+    http: 0,
+    handler: fend
+  }, function (err, servers) {
+    console.dir(err);
+    t.error(err);
+    t.equals(typeof servers, 'object');
+    t.equals(typeof servers.http, 'object');
+    t.equals(typeof servers.http.address().port, 'number');
+    servers.http.close();
+  });
+});
+
+
 test('only https', function (t) {
   t.plan(3);
   createServers({
