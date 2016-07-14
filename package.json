@@ -28,6 +28,6 @@
   },
   "devDependencies": {
     "sinon": "^1.17.4",
-    "tape": "~2.14.0"
+    "tape": "~4.6.0"
   }
 }
