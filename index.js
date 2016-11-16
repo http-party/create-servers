@@ -103,6 +103,10 @@ module.exports = function createServers(options, listening) {
         port   = !isNaN(options.http.port) ? +options.http.port : 80, // accepts string or number
         args;
 
+    if (typeof options.http.timeout === 'number') {
+      server.setTimeout(options.http.timeout);
+    }
+
     args = [server, port];
     if (options.http.host) {
       args.push(options.http.host);
@@ -165,6 +169,7 @@ module.exports = function createServers(options, listening) {
     log('https | listening on %d', port);
     server = https.createServer(finalHttpsOptions, ssl.handler || handler);
 
+    if (typeof ssl.timeout === 'number') server.setTimeout(ssl.timeout);
     args = [server, port];
     if (options.https.host) {
       args.push(options.https.host);
