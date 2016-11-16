@@ -100,12 +100,11 @@ module.exports = function createServers(options, listening) {
     }
 
     var server = http.createServer(options.http.handler || handler),
+        timeout = options.timeout || options.http.timeout,
         port   = !isNaN(options.http.port) ? +options.http.port : 80, // accepts string or number
         args;
 
-    if (typeof options.http.timeout === 'number') {
-      server.setTimeout(options.http.timeout);
-    }
+    if (typeof timeout === 'number') server.setTimeout(timeout);
 
     args = [server, port];
     if (options.http.host) {
@@ -130,6 +129,7 @@ module.exports = function createServers(options, listening) {
     var ssl  = options.https,
         port = !isNaN(ssl.port) ? +ssl.port : 443,  // accepts string or number
         ciphers = ssl.ciphers || CIPHERS,
+        timeout = options.timeout || ssl.timeout,
         ca = ssl.ca,
         server,
         args;
@@ -169,7 +169,7 @@ module.exports = function createServers(options, listening) {
     log('https | listening on %d', port);
     server = https.createServer(finalHttpsOptions, ssl.handler || handler);
 
-    if (typeof ssl.timeout === 'number') server.setTimeout(ssl.timeout);
+    if (typeof timeout === 'number') server.setTimeout(timeout);
     args = [server, port];
     if (options.https.host) {
       args.push(options.https.host);
