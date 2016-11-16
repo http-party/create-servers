@@ -51,6 +51,24 @@ test('only http, port 0', function (t) {
   });
 });
 
+test('only http, timeout', function (t) {
+  t.plan(5);
+  var time = 3000000;
+  createServers({
+    log: console.log,
+    timeout: time,
+    http: 0,
+    handler: fend
+  }, function (err, servers) {
+    console.dir(err);
+    t.error(err);
+    t.equals(typeof servers, 'object');
+    t.equals(typeof servers.http, 'object');
+    t.equals(typeof servers.http.address().port, 'number');
+    t.equals(servers.http.timeout, time);
+    servers.http.close();
+  });
+});
 
 test('only https', function (t) {
   t.plan(3);
@@ -67,6 +85,28 @@ test('only https', function (t) {
     t.error(err);
     t.equals(typeof servers, 'object');
     t.equals(typeof servers.https, 'object');
+    servers.https.close();
+  });
+});
+
+test('only https', function (t) {
+  t.plan(4);
+  var time = 4000000;
+  createServers({
+    log: console.log,
+    https: {
+      timeout: time,
+      port: 3456,
+      root: path.join(__dirname, 'fixtures'),
+      cert: 'agent2-cert.pem',
+      key:  'agent2-key.pem'
+    },
+    handler: fend
+  }, function (err, servers) {
+    t.error(err);
+    t.equals(typeof servers, 'object');
+    t.equals(typeof servers.https, 'object');
+    t.equals(servers.https.timeout, time);
     servers.https.close();
   });
 });
