@@ -254,6 +254,26 @@ test('supports cert contents instead of cert paths', function (t) {
   });
 });
 
+test('supports cert array instead of strings', function (t) {
+  t.plan(3);
+  var root = path.join(__dirname, 'fixtures');
+  createServers({
+    log: console.log,
+    https: {
+      port: 3456,
+      root: root,
+      cert: [fs.readFileSync(path.resolve(root, 'agent2-cert.pem'))],
+      key:  fs.readFileSync(path.resolve(root, 'agent2-key.pem'))
+    },
+    handler: fend
+  }, function (err, servers) {
+    t.error(err);
+    t.equals(typeof servers, 'object');
+    t.equals(typeof servers.https, 'object');
+    servers.https.close();
+  });
+});
+
 test('supports requestCert https option', function (t) {
   t.plan(2);
   var spy = sinon.spy(https, 'createServer');

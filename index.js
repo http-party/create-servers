@@ -190,6 +190,10 @@ module.exports = function createServers(options, listening) {
  * certificate material read from that file path.
  */
 function normalizeCertFile(root, file) {
+  if (Array.isArray(file)) return file.map(function map(item) {
+    return normalizeCertFile(root, item)
+  });
+
   //
   // Assumption that this is a Buffer, a PEM file, or something broken
   //
