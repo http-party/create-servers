@@ -27,7 +27,7 @@
     "object-assign": "^4.1.0"
   },
   "devDependencies": {
-    "sinon": "^1.17.4",
-    "tape": "~4.6.0"
+    "sinon": "^5.0.7",
+    "tape": "~4.9.0"
   }
 }
