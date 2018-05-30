@@ -171,8 +171,8 @@ module.exports = function createServers(options, listening) {
 
     if (typeof timeout === 'number') server.setTimeout(timeout);
     args = [server, port];
-    if (options.https.host) {
-      args.push(options.https.host);
+    if (ssl.host) {
+      args.push(ssl.host);
     }
 
     args.push(function listener(err) { onListen('https', err, this); });
