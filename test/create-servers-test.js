@@ -274,6 +274,33 @@ test('supports cert array instead of strings', function (t) {
   });
 });
 
+test('supports creating certificate chains', function (t) {
+  t.plan(2);
+  var root = path.join(__dirname, 'fixtures');
+  var agent3Cert = fs.readFileSync(path.resolve(root, 'agent3-cert.pem'));
+  var intermediate = fs.readFileSync(path.resolve(root, 'intermediate-cert.pem'));
+  var spy = sinon.spy(https, 'createServer');
+  createServers({
+    log: console.log,
+    https: {
+      port: 3456,
+      root: root,
+      cert: ['agent3-cert.pem', 'intermediate-cert.pem'],
+      key:  'agent3-key.pem'
+    },
+    handler: fend
+  }, function (err, servers) {
+    t.error(err);
+
+    const expectedBundle = [agent3Cert, intermediate].join('\n');
+    const cert = spy.lastCall.args[0].cert;
+    t.equals(cert, expectedBundle, 'should create a cert chain');
+
+    servers.https.close();
+    spy.restore();
+  });
+});
+
 test('supports requestCert https option', function (t) {
   t.plan(2);
   var spy = sinon.spy(https, 'createServer');

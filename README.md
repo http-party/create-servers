@@ -42,9 +42,62 @@ following properties:
 
 `create-servers` provides some conveniences for `https.ca`, `https.key`, and 
 `https.cert` config properties. You may use PEM data directly (inside a `Buffer`
-or string) or a file name. When using a file name, you may also set an 
-`https.root` config property to enable using relative paths to cert/key files.
-`https.ca` and `https.cert` also support specifying an Array of certs/files.
+or string) or a file name. When using a file name, you must also set an 
+`https.root` config property if using relative paths to cert/key files.
+
+`https.ca`, `https.cert`, and `https.key` also support specifying an Array.
+Given an array for `cert`, you must have a matching array for `key` so each cert
+can be matched with its private key.
+
+```js
+const createServers = require('create-servers');
+
+createServers({
+  https: {
+    root: '/cert/path',
+    cert: ['cert1.crt', 'cert2.crt'],
+    key: ['cert1.key', 'cert2.key']
+  }
+}, err => {
+  // ...
+})
+```
+
+If you have a cert that is signed by an intermediate CA, your server will need
+to append the untrusted parts of the CA chain with your cert. To make this more
+convenient, `create-servers` lets you use an array to automatically create a
+chain.
+
+```js
+const createServers = require('create-servers');
+
+createServers({
+  https: {
+    root: '/cert/path',
+    cert: ['cert.crt', 'intermediate.crt'],
+    key: 'cert.key'
+  }
+}, err => {
+  // ...
+})
+```
+
+If you are specifying multiple certs _and_ you want to create chains for each,
+use an array of arrays.
+
+```js
+const createServers = require('create-servers');
+
+createServers({
+  https: {
+    root: '/cert/path',
+    cert: [['cert1.crt', 'intermediate.crt'], 'cert2.crt'],
+    key: ['cert1.key', 'cert2.key']
+  }
+}, err => {
+  // ...
+})
+```
 
 ## NOTE on Security
 Inspired by [`iojs`][iojs] and a well written [article][article], we have defaulted
