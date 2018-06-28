@@ -149,9 +149,9 @@ module.exports = function createServers(options, listening) {
       //
       // Load default SSL key, cert and ca(s).
       //
-      key: normalizeCertFile(ssl.root, ssl.key),
-      cert: normalizeCertFile(ssl.root, ssl.cert),
-      ca: ca && ca.map(normalizeCertFile.bind(null, ssl.root)),
+      key: normalizePEMContent(ssl.root, ssl.key),
+      cert: normalizeCertContent(ssl.root, ssl.cert, ssl.key),
+      ca: ca && ca.map(normalizePEMContent.bind(null, ssl.root)),
       //
       // Properly expose ciphers for an A+ SSL rating:
       // https://certsimple.com/blog/a-plus-node-js-ssl
@@ -183,15 +183,51 @@ module.exports = function createServers(options, listening) {
     .forEach(function (fn) { fn(); });
 };
 
+function normalizeCertContent(root, cert, key) {
+  // Node accepts an array of certs, which must match up with an array of keys.
+  // The user may instead intend for an array passed into cert to represent
+  // a cert chain they want to concatenate. Therefore, if key is not an array,
+  // we'll assume the latter.
+  if (Array.isArray(cert)) {
+    if (Array.isArray(key)) {
+      // This is an array of certs/chains with corresponding keys
+      return normalizeCertChainList(root, cert);
+    } else {
+      // This is a single cert chain
+      return normalizeCertChain(root, cert);
+    }
+  }
+
+  return normalizePEMContent(root, cert);
+}
+
+function normalizeCertChainList(root, data) {
+  // If this is an array, treat like an array of bundles, otherwise a single
+  // bundle
+  return Array.isArray(data)
+    ? data.map(function (item) {
+      return normalizeCertChain(root, item);
+    })
+    : normalizePEMContent(root, data);
+}
+
+function normalizeCertChain(root, data) {
+  // A chain can be an array, which we concatenate together into one PEM,
+  // an already-concatenated chain, or a single PEM
+
+  const content = normalizePEMContent(root, data);
+  return Array.isArray(content) ? content.join('\n') : content;
+}
+
 /**
- * function normalizeCertFile(root, file)
+ * function normalizePEMContent(root, file)
  * Returns the contents of `file` verbatim if it is determined to be
  * certificate material and not a file path. Otherwise, returns the
  * certificate material read from that file path.
  */
-function normalizeCertFile(root, file) {
+function normalizePEMContent(root, file) {
   if (Array.isArray(file)) return file.map(function map(item) {
-    return normalizeCertFile(root, item)
+    return normalizePEMContent(root, item)
   });
 
   //
