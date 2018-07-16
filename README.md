@@ -27,6 +27,7 @@ a node-style callback. The config object must have at minimum an `http` or
 | `https.key`               | PEM/file path for the server's private key. See [Certificate normalization](#certificate-normalization) for more details. |
 | `https.cert`              | PEM/file path(s) for the server's certificate. See [Certificate normalization](#certificate-normalization) for more details. |
 | `https.ca`                | Cert or array of certs specifying trusted authorities for peer certificates. Only required if your server accepts client certificate connections signed by authorities that are not trusted by default. See [Certificate normalization](#certificate-normalization) for more details. |
+| `https.sni`               | See [SNI Support](#sni-support). |
 | `https.handler`           | Handler for HTTPS requests. If you want to share a handler with all servers, use a top-level `handler` config property instead. |
 | `https.*`                 | Any other properties supported by [https.createServer](https://nodejs.org/dist/latest-v8.x/docs/api/https.html#https_https_createserver_options_requestlistener) can be added to the https object, except `secureProtocol` and `secureOptions` which are set to recommended values. |
 
@@ -38,7 +39,7 @@ following properties:
 | `http`   | The HTTP server that was created, if any |
 | `https`  | The HTTPS server that was created, if any |
 
-### Certificate normalization
+### Certificate Normalization
 
 `create-servers` provides some conveniences for `https.ca`, `https.key`, and 
 `https.cert` config properties. You may use PEM data directly (inside a `Buffer`
@@ -98,6 +99,61 @@ createServers({
   // ...
 })
 ```
+
+### SNI Support
+
+[Server Name Indication](https://en.wikipedia.org/wiki/Server_Name_Indication),
+or SNI, lets HTTPS clients announce which hostname they wish to connect to
+before the server sends its certificate, enabling the use of the same server for
+multiple hosts. Although `SNICallback` can be used to support this, you lose the
+convenient certificate normalization provided by `create-servers`. The `sni`
+config option provides an easier way.
+
+The `sni` option is an object with each key being a supported hostname and each
+value being a subset of the HTTPS settings listed above. HTTPS settings defined
+at the top level are used as defaults for the hostname-specific settings.
+
+```js
+const createServers = require('create-servers');
+
+createServers(
+  {
+    https: {
+      port: 443,
+      sni: {
+        'example1.com': {
+          key: '/certs/private/example1.com.key',
+          cert: '/certs/public/example1.com.crt'
+        },
+        'example2.com': {
+          key: '/certs/private/example2.com.key',
+          cert: '/certs/public/example2.com.crt'
+        }
+      }
+    },
+    handler: function (req, res) {
+      res.end('Hello');
+    }
+  },
+  function (errs) {
+    if (errs) {
+      return console.log(errs.https);
+    }
+
+    console.log('Listening on 443');
+  }
+);
+```
+
+Use `*` in the hostname for wildcard certs. Example: `*.example.com`. The
+following settings are supported in the host-specific configuration:
+
+* key
+* cert
+* ca
+* ciphers
+* honorCipherOrder
+* Anything else supported by [`tls.createSecureContext`](https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options)
 
 ## NOTE on Security
 Inspired by [`iojs`][iojs] and a well written [article][article], we have defaulted

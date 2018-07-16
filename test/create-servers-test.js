@@ -7,17 +7,47 @@
 
 var path = require('path'),
     fs = require('fs'),
+    url = require('url'),
     http = require('http'),
     https = require('https'),
+    { promisify } = require('util'),
     test = require('tape'),
     sinon = require('sinon'),
+    evilDNS = require('evil-dns'),
     createServers = require('../');
+
+const createServersAsync = promisify(createServers);
+
+const ca = fs.readFileSync(path.join(__dirname, './fixtures/example-ca-cert.pem'));
 
 //
 // Immediately end a response.
 //
 function fend(req, res) {
   res.end();
+}
+
+//
+// Request and download response from a URL
+//
+async function download(httpsURL) {
+  return new Promise((resolve, reject) => {
+    const req = https.get({
+      ...url.parse(httpsURL),
+      ca
+    }, res => {
+      const chunks = [];
+      res
+        .on('data', chunk => chunks.push(chunk))
+        .once('end', () => {
+          resolve(chunks.map(chunk => chunk.toString('utf8')).join(''));
+        })
+        .once('aborted', reject)
+        .once('close', reject)
+        .once('error', reject)
+    });
+    req.once('error', reject);
+  });
 }
 
 test('only http', function (t) {
@@ -320,4 +350,59 @@ test('supports requestCert https option', function (t) {
     servers.https.close();
     spy.restore();
   });
+});
+
+test('supports SNI', async t => {
+  t.plan(1);
+
+  const hostNames = [
+    'example.com',
+    'example.net',
+    'foo.example.org',
+  ];
+
+  let httpsServer;
+  try {
+    const servers = await createServersAsync({
+      https: {
+        port: 3456,
+        root: path.join(__dirname, 'fixtures'),
+        sni: {
+          'example.com': {
+            key: 'example-com-key.pem',
+            cert: 'example-com-cert.pem'
+          },
+          'example.net': {
+            key: 'example-net-key.pem',
+            cert: 'example-net-cert.pem'
+          },
+          '*.example.org': {
+            key: 'example-org-key.pem',
+            cert: 'example-org-cert.pem'
+          }
+        }
+      },
+      handler: (req, res) => {
+        res.write('Hello');
+        res.end();
+      }
+    });
+    httpsServer = servers.https;
+
+    hostNames.forEach(host => evilDNS.add(host, '0.0.0.0'));
+
+    const responses = await Promise.all(hostNames
+      .map(hostname => download(`https://${hostname}:3456/`)));
+
+    t.equals(
+      responses.every(str => str === 'Hello'),
+      true,
+      'responses are as expected');
+
+  } catch (err) {
+    return void t.error(err);
+  } finally {
+    httpsServer && httpsServer.close();
+    evilDNS.clear();
+  }
 });

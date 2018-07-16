@@ -10,7 +10,9 @@
 var fs = require('fs'),
     http = require('http'),
     https = require('https'),
+    tls = require('tls'),
     path = require('path'),
+    constants = require('constants'),
     connected = require('connected'),
     errs = require('errs'),
     assign = require('object-assign');
@@ -35,6 +37,8 @@ var CIPHERS = [
   '!SRP',
   '!CAMELLIA'
 ].join(':');
+
+var secureOptions = constants.SSL_OP_NO_SSLv3;
 
 /**
  * function createServers (dispatch, options, callback)
@@ -120,7 +124,7 @@ module.exports = function createServers(options, listening) {
   // ### function createHttps ()
   // Attempts to create and listen on the HTTPS server.
   //
-  function createHttps(next) {
+  function createHttps() {
     if (typeof options.https === 'undefined') {
       log('https | no options.https; no server');
       return onListen('https');
@@ -128,22 +132,9 @@ module.exports = function createServers(options, listening) {
 
     var ssl  = options.https,
         port = !isNaN(ssl.port) ? +ssl.port : 443,  // accepts string or number
-        ciphers = ssl.ciphers || CIPHERS,
         timeout = options.timeout || ssl.timeout,
-        ca = ssl.ca,
         server,
         args;
-
-    //
-    // Remark: If an array is passed in lets join it like we do the defaults
-    //
-    if (Array.isArray(ciphers)) {
-      ciphers = ciphers.join(':');
-    }
-
-    if (ca && !Array.isArray(ca)) {
-      ca = [ca];
-    }
 
     var finalHttpsOptions = assign({}, ssl, {
       //
@@ -151,20 +142,24 @@ module.exports = function createServers(options, listening) {
       //
       key: normalizePEMContent(ssl.root, ssl.key),
       cert: normalizeCertContent(ssl.root, ssl.cert, ssl.key),
-      ca: ca && ca.map(normalizePEMContent.bind(null, ssl.root)),
+      ca: normalizeCA(ssl.root, ssl.ca),
       //
       // Properly expose ciphers for an A+ SSL rating:
       // https://certsimple.com/blog/a-plus-node-js-ssl
       //
-      ciphers: ciphers,
+      ciphers: normalizeCiphers(ssl.ciphers),
       honorCipherOrder: !!ssl.honorCipherOrder,
       //
       // Protect against the POODLE attack by disabling SSLv3
       // @see http://googleonlinesecurity.blogspot.nl/2014/10/this-poodle-bites-exploiting-ssl-30.html
       //
       secureProtocol: 'SSLv23_method',
-      secureOptions: require('constants').SSL_OP_NO_SSLv3
+      secureOptions: secureOptions
     });
+
+    if (ssl.sni && !finalHttpsOptions.SNICallback) {
+      finalHttpsOptions.SNICallback = getSNIHandler(ssl)
+    }
 
     log('https | listening on %d', port);
     server = https.createServer(finalHttpsOptions, ssl.handler || handler);
@@ -219,6 +214,13 @@ function normalizeCertChain(root, data) {
   return Array.isArray(content) ? content.join('\n') : content;
 }
 
+function normalizeCA(root, ca) {
+  if (ca && !Array.isArray(ca)) {
+    ca = [ca];
+  }
+  return ca && ca.map(normalizePEMContent.bind(null, root));
+}
+
 /**
  * function normalizePEMContent(root, file)
  * Returns the contents of `file` verbatim if it is determined to be
@@ -238,4 +240,60 @@ function normalizePEMContent(root, file) {
   }
 
   return fs.readFileSync(path.resolve(root, file));
+}
+
+function normalizeCiphers(ciphers) {
+  ciphers = ciphers || CIPHERS;
+  //
+  // Remark: If an array is passed in lets join it like we do the defaults
+  //
+  if (Array.isArray(ciphers)) {
+    ciphers = ciphers.join(':');
+  }
+  return ciphers;
+}
+
+function getSNIHandler(sslOpts) {
+  var sniHosts = Object.keys(sslOpts.sni);
+
+  // Pre-compile regexps for the hostname
+  var hostRegexps = sniHosts.map(function (host) {
+    return new RegExp(
+      '^' +
+      host
+        .replace('.', '\\.')             // Match dots, not wildcards
+        .replace('*\\.', '(?:.*\\.)?') + // Handle optional wildcard sub-domains
+      '$',
+      'i'
+    );
+  });
+
+  // Prepare secure context params ahead-of-time
+  var hostTlsOpts = sniHosts.map(function (host) {
+    var hostOpts = sslOpts.sni[host];
+
+    var root = hostOpts.root || sslOpts.root;
+
+    return assign({}, sslOpts, hostOpts, {
+      key: normalizePEMContent(root, hostOpts.key),
+      cert: normalizeCertContent(root, hostOpts.cert),
+      ca: normalizeCA(root, hostOpts.ca || sslOpts.ca),
+      ciphers: normalizeCiphers(hostOpts.ciphers || sslOpts.ciphers),
+      honorCipherOrder: !!(hostOpts.honorCipherOrder || sslOpts.honorCipherOrder),
+      secureProtocol: 'SSLv23_method',
+      secureOptions: secureOptions
+    });
+  });
+
+  return function (hostname, cb) {
+    var matchingHostIdx = sniHosts.findIndex(function(candidate, i) {
+      return hostRegexps[i].test(hostname);
+    });
+
+    if (matchingHostIdx === -1) {
+      return void cb(new Error('Unrecognized hostname: ' + hostname));
+    }
+
+    cb(null, tls.createSecureContext(hostTlsOpts[matchingHostIdx]));
+  };
 }
