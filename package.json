@@ -27,6 +27,7 @@
     "object-assign": "^4.1.0"
   },
   "devDependencies": {
+    "evil-dns": "^0.2.0",
     "sinon": "^5.0.7",
     "tape": "~4.9.0"
   }
