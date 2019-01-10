@@ -107,8 +107,8 @@ test('only https', function (t) {
     https: {
       port: 3456,
       root: path.join(__dirname, 'fixtures'),
-      cert: 'agent2-cert.pem',
-      key:  'agent2-key.pem'
+      key: 'example-org-key.pem',
+      cert: 'example-org-cert.pem'
     },
     handler: fend
   }, function (err, servers) {
@@ -128,8 +128,8 @@ test('only https', function (t) {
       timeout: time,
       port: 3456,
       root: path.join(__dirname, 'fixtures'),
-      cert: 'agent2-cert.pem',
-      key:  'agent2-key.pem'
+      key: 'example-org-key.pem',
+      cert: 'example-org-cert.pem'
     },
     handler: fend
   }, function (err, servers) {
@@ -148,8 +148,8 @@ test('absolute cert path resolution', function (t) {
     https: {
       port: 3456,
       root: '/',
-      cert: path.resolve(__dirname, 'fixtures', 'agent2-cert.pem'),
-      key:  path.resolve(__dirname, 'fixtures', 'agent2-key.pem')
+      cert: path.resolve(__dirname, 'fixtures', 'example-org-cert.pem'),
+      key:  path.resolve(__dirname, 'fixtures', 'example-org-key.pem')
     },
     handler: fend
   }, function (err, servers) {
@@ -168,8 +168,8 @@ test('http && https', function (t) {
     https: {
       port: 3456,
       root: path.join(__dirname, 'fixtures'),
-      cert: 'agent2-cert.pem',
-      key:  'agent2-key.pem'
+      key: 'example-org-key.pem',
+      cert: 'example-org-cert.pem'
     },
     handler: fend
   }, function (err, servers) {
@@ -189,8 +189,8 @@ test('provides useful debug information', function (t) {
     https: {
       port: 443,
       root: path.join(__dirname, 'fixtures'),
-      cert: 'agent2-cert.pem',
-      key:  'agent2-key.pem'
+      key: 'example-org-key.pem',
+      cert: 'example-org-cert.pem'
     },
     handler: fend
   }, function (err, servers) {
@@ -218,8 +218,8 @@ test('http && https with different handlers', function (t) {
       },
       port: 3456,
       root: path.join(__dirname, 'fixtures'),
-      cert: 'agent2-cert.pem',
-      key:  'agent2-key.pem'
+      key: 'example-org-key.pem',
+      cert: 'example-org-cert.pem'
     },
   }, function (err, servers) {
     t.error(err);
@@ -272,8 +272,8 @@ test('supports cert contents instead of cert paths', function (t) {
     https: {
       port: 3456,
       root: root,
-      cert: fs.readFileSync(path.resolve(root, 'agent2-cert.pem')),
-      key:  fs.readFileSync(path.resolve(root, 'agent2-key.pem'))
+      cert: fs.readFileSync(path.resolve(root, 'example-org-cert.pem')),
+      key:  fs.readFileSync(path.resolve(root, 'example-org-key.pem'))
     },
     handler: fend
   }, function (err, servers) {
@@ -292,8 +292,8 @@ test('supports cert array instead of strings', function (t) {
     https: {
       port: 3456,
       root: root,
-      cert: [fs.readFileSync(path.resolve(root, 'agent2-cert.pem'))],
-      key:  fs.readFileSync(path.resolve(root, 'agent2-key.pem'))
+      key: 'example-org-key.pem',
+      cert: 'example-org-cert.pem'
     },
     handler: fend
   }, function (err, servers) {
@@ -337,10 +337,10 @@ test('supports requestCert https option', function (t) {
   createServers({
     log: console.log,
     https: {
-      port:        3456,
-      root:        path.join(__dirname, 'fixtures'),
-      cert:        'agent2-cert.pem',
-      key:         'agent2-key.pem',
+      port: 3456,
+      root: path.join(__dirname, 'fixtures'),
+      key: 'example-org-key.pem',
+      cert: 'example-org-cert.pem',
       requestCert: true
     },
     handler: fend

@@ -268,13 +268,13 @@ function getSNIHandler(sslOpts) {
     );
   });
 
-  // Prepare secure context params ahead-of-time
-  var hostTlsOpts = sniHosts.map(function (host) {
+  // Prepare secure contexts ahead-of-time
+  var hostSecureContexts = sniHosts.map(function (host) {
     var hostOpts = sslOpts.sni[host];
 
     var root = hostOpts.root || sslOpts.root;
 
-    return assign({}, sslOpts, hostOpts, {
+    return tls.createSecureContext(assign({}, sslOpts, hostOpts, {
       key: normalizePEMContent(root, hostOpts.key),
       cert: normalizeCertContent(root, hostOpts.cert),
       ca: normalizeCA(root, hostOpts.ca || sslOpts.ca),
@@ -282,7 +282,7 @@ function getSNIHandler(sslOpts) {
       honorCipherOrder: !!(hostOpts.honorCipherOrder || sslOpts.honorCipherOrder),
       secureProtocol: 'SSLv23_method',
       secureOptions: secureOptions
-    });
+    }));
   });
 
   return function (hostname, cb) {
@@ -294,6 +294,6 @@ function getSNIHandler(sslOpts) {
       return void cb(new Error('Unrecognized hostname: ' + hostname));
     }
 
-    cb(null, tls.createSecureContext(hostTlsOpts[matchingHostIdx]));
+    cb(null, hostSecureContexts[matchingHostIdx]);
   };
 }
