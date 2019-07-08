@@ -56,7 +56,9 @@ module.exports = async function createServers(options, listening) {
     createHttps(options.https, options.log)
   ]);
 
-  const servers = { http, https };
+  const servers = {};
+  if (http) servers.http = http;
+  if (https) servers.https = https;
 
   if (httpErr || httpsErr) {
     let errorSource = httpsErr || httpErr;
