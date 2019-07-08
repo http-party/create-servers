@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/indexzero/create-servers"
+    "url": "https://github.com/http-party/create-servers"
   },
   "keywords": [
     "http",
@@ -18,9 +18,9 @@
   "author": "Charlie Robbins <charlie.robbins@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/indexzero/create-servers/issues"
+    "url": "https://github.com/http-party/create-servers/issues"
   },
-  "homepage": "https://github.com/indexzero/create-servers",
+  "homepage": "https://github.com/http-party/create-servers",
   "dependencies": {
     "connected": "~0.0.2",
     "errs": "~0.3.0",
