@@ -44,14 +44,14 @@ async function download(httpsURL) {
         })
         .once('aborted', reject)
         .once('close', reject)
-        .once('error', reject)
+        .once('error', reject);
     });
     req.once('error', reject);
   });
 }
 
 test('only http', function (t) {
-  t.plan(3);
+  t.plan(5);
   createServers({
     log: console.log,
     http: 9876,
@@ -61,6 +61,8 @@ test('only http', function (t) {
     t.error(err);
     t.equals(typeof servers, 'object');
     t.equals(typeof servers.http, 'object');
+    t.equals(servers.http instanceof Array, false);
+    t.equals(servers.https, undefined);
     servers.http.close();
   });
 });
@@ -101,7 +103,7 @@ test('only http, timeout', function (t) {
 });
 
 test('only https', function (t) {
-  t.plan(3);
+  t.plan(5);
   createServers({
     log: console.log,
     https: {
@@ -115,6 +117,8 @@ test('only https', function (t) {
     t.error(err);
     t.equals(typeof servers, 'object');
     t.equals(typeof servers.https, 'object');
+    t.equals(servers.https instanceof Array, false);
+    t.equals(servers.http, undefined);
     servers.https.close();
   });
 });
@@ -149,7 +153,7 @@ test('absolute cert path resolution', function (t) {
       port: 3456,
       root: '/',
       cert: path.resolve(__dirname, 'fixtures', 'example-org-cert.pem'),
-      key:  path.resolve(__dirname, 'fixtures', 'example-org-key.pem')
+      key: path.resolve(__dirname, 'fixtures', 'example-org-key.pem')
     },
     handler: fend
   }, function (err, servers) {
@@ -182,7 +186,7 @@ test('http && https', function (t) {
   });
 });
 
-test('provides useful debug information', async function(t) {
+test('provides useful debug information', async function (t) {
   t.plan(4);
 
   const config = {
@@ -229,7 +233,7 @@ test('http && https with different handlers', function (t) {
       root: path.join(__dirname, 'fixtures'),
       key: 'example-org-key.pem',
       cert: 'example-org-cert.pem'
-    },
+    }
   }, function (err, servers) {
     t.error(err);
     t.equals(typeof servers, 'object');
@@ -282,7 +286,7 @@ test('supports cert contents instead of cert paths', function (t) {
       port: 3456,
       root: root,
       cert: fs.readFileSync(path.resolve(root, 'example-org-cert.pem')),
-      key:  fs.readFileSync(path.resolve(root, 'example-org-key.pem'))
+      key: fs.readFileSync(path.resolve(root, 'example-org-key.pem'))
     },
     handler: fend
   }, function (err, servers) {
@@ -317,7 +321,9 @@ test('supports creating certificate chains', function (t) {
   t.plan(2);
   var root = path.join(__dirname, 'fixtures');
   var agent3Cert = fs.readFileSync(path.resolve(root, 'agent3-cert.pem'));
-  var intermediate = fs.readFileSync(path.resolve(root, 'intermediate-cert.pem'));
+  var intermediate = fs.readFileSync(
+    path.resolve(root, 'intermediate-cert.pem')
+  );
   var spy = sinon.spy(https, 'createServer');
   createServers({
     log: console.log,
@@ -325,7 +331,7 @@ test('supports creating certificate chains', function (t) {
       port: 3456,
       root: root,
       cert: ['agent3-cert.pem', 'intermediate-cert.pem'],
-      key:  'agent3-key.pem'
+      key: 'agent3-key.pem'
     },
     handler: fend
   }, function (err, servers) {
@@ -355,7 +361,11 @@ test('supports requestCert https option', function (t) {
     handler: fend
   }, function (err, servers) {
     t.error(err);
-    t.equals(spy.lastCall.args[0].requestCert, true, 'should preserve the requestCert option');
+    t.equals(
+      spy.lastCall.args[0].requestCert,
+      true,
+      'should preserve the requestCert option'
+    );
     servers.https.close();
     spy.restore();
   });
@@ -364,11 +374,7 @@ test('supports requestCert https option', function (t) {
 test('supports SNI', async t => {
   t.plan(1);
 
-  const hostNames = [
-    'example.com',
-    'example.net',
-    'foo.example.org',
-  ];
+  const hostNames = ['example.com', 'example.net', 'foo.example.org'];
 
   let httpsServer;
   try {
@@ -400,14 +406,15 @@ test('supports SNI', async t => {
 
     hostNames.forEach(host => evilDNS.add(host, '0.0.0.0'));
 
-    const responses = await Promise.all(hostNames
-      .map(hostname => download(`https://${hostname}:3456/`)));
+    const responses = await Promise.all(
+      hostNames.map(hostname => download(`https://${hostname}:3456/`))
+    );
 
     t.equals(
       responses.every(str => str === 'Hello'),
       true,
-      'responses are as expected');
-
+      'responses are as expected'
+    );
   } catch (err) {
     return void t.error(err);
   } finally {
@@ -416,7 +423,7 @@ test('supports SNI', async t => {
   }
 });
 
-test('multiple https servers', async function(t) {
+test('multiple https servers', async function (t) {
   t.plan(2);
 
   evilDNS.add('foo.example.org', '0.0.0.0');
