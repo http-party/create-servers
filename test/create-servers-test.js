@@ -6,15 +6,15 @@
  */
 
 var path = require('path'),
-    fs = require('fs'),
-    url = require('url'),
-    http = require('http'),
-    https = require('https'),
-    { promisify } = require('util'),
-    test = require('tape'),
-    sinon = require('sinon'),
-    evilDNS = require('evil-dns'),
-    createServers = require('../');
+  fs = require('fs'),
+  url = require('url'),
+  http = require('http'),
+  https = require('https'),
+  { promisify } = require('util'),
+  test = require('tape'),
+  sinon = require('sinon'),
+  evilDNS = require('evil-dns'),
+  createServers = require('../');
 
 const createServersAsync = promisify(createServers);
 
@@ -182,24 +182,33 @@ test('http && https', function (t) {
   });
 });
 
-test('provides useful debug information', function (t) {
-  t.plan(5);
-  createServers({
+test('provides useful debug information', async function(t) {
+  t.plan(4);
+
+  const config = {
     log: console.log,
     https: {
-      port: 443,
+      port: 3456,
       root: path.join(__dirname, 'fixtures'),
       key: 'example-org-key.pem',
       cert: 'example-org-cert.pem'
     },
     handler: fend
-  }, function (err, servers) {
-    t.equals(typeof servers, 'object');
+  };
+
+  // Simulate a "port in use" error
+  const { https: server1 } = await createServersAsync(config);
+
+  try {
+    await createServersAsync(config);
+  } catch (err) {
     t.equals(typeof err, 'object');
     t.equals(typeof err.https, 'object');
     t.equals(typeof err.message, 'string');
     t.notEqual(err.message, 'Unspecified error');
-  });
+  } finally {
+    server1.close();
+  }
 });
 
 test('http && https with different handlers', function (t) {
@@ -403,6 +412,50 @@ test('supports SNI', async t => {
     return void t.error(err);
   } finally {
     httpsServer && httpsServer.close();
+    evilDNS.clear();
+  }
+});
+
+test('multiple https servers', async function(t) {
+  t.plan(2);
+
+  evilDNS.add('foo.example.org', '0.0.0.0');
+  const servers = await createServersAsync({
+    log: console.log,
+    https: [
+      {
+        port: 3456,
+        root: path.join(__dirname, 'fixtures'),
+        key: 'example-org-key.pem',
+        cert: 'example-org-cert.pem'
+      },
+      {
+        port: 6543,
+        root: path.join(__dirname, 'fixtures'),
+        key: 'example-org-key.pem',
+        cert: 'example-org-cert.pem'
+      }
+    ],
+    handler: (req, res) => {
+      res.end('Hello');
+    }
+  });
+
+  try {
+    t.equals(servers.https.length, 2, 'two servers were created');
+    const responses = await Promise.all([
+      download('https://foo.example.org:3456/'),
+      download('https://foo.example.org:6543/')
+    ]);
+    t.equals(
+      responses.every(str => str === 'Hello'),
+      true,
+      'responses are as expected'
+    );
+  } finally {
+    let toClose =
+      servers.https instanceof Array ? servers.https : [servers.https];
+    toClose.forEach(server => server.close());
     evilDNS.clear();
   }
 });
