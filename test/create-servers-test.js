@@ -372,55 +372,33 @@ test('supports requestCert https option', function (t) {
 });
 
 test('supports SNI', async t => {
-  t.plan(1);
+  await testSni(t, {
+    'example.com': {
+      key: 'example-com-key.pem',
+      cert: 'example-com-cert.pem'
+    },
+    'example.net': {
+      key: 'example-net-key.pem',
+      cert: 'example-net-cert.pem'
+    },
+    '*.example.org': {
+      key: 'example-org-key.pem',
+      cert: 'example-org-cert.pem'
+    }
+  }, ['example.com', 'example.net', 'foo.example.org']);
+});
 
-  const hostNames = ['example.com', 'example.net', 'foo.example.org'];
-
-  let httpsServer;
-  try {
-    const servers = await createServersAsync({
-      https: {
-        port: 3456,
-        root: path.join(__dirname, 'fixtures'),
-        sni: {
-          'example.com': {
-            key: 'example-com-key.pem',
-            cert: 'example-com-cert.pem'
-          },
-          'example.net': {
-            key: 'example-net-key.pem',
-            cert: 'example-net-cert.pem'
-          },
-          '*.example.org': {
-            key: 'example-org-key.pem',
-            cert: 'example-org-cert.pem'
-          }
-        }
-      },
-      handler: (req, res) => {
-        res.write('Hello');
-        res.end();
-      }
-    });
-    httpsServer = servers.https;
-
-    hostNames.forEach(host => evilDNS.add(host, '0.0.0.0'));
-
-    const responses = await Promise.all(
-      hostNames.map(hostname => download(`https://${hostname}:3456/`))
-    );
-
-    t.equals(
-      responses.every(str => str === 'Hello'),
-      true,
-      'responses are as expected'
-    );
-  } catch (err) {
-    return void t.error(err);
-  } finally {
-    httpsServer && httpsServer.close();
-    evilDNS.clear();
-  }
+test('supports catch-all * for SNI', async t => {
+  await testSni(t, {
+    'example.com': {
+      key: 'example-com-key.pem',
+      cert: 'example-com-cert.pem'
+    },
+    '*': {
+      key: 'example-org-key.pem',
+      cert: 'example-org-cert.pem'
+    }
+  }, ['example.com', 'foo.example.org']);
 });
 
 test('multiple https servers', async function (t) {
@@ -466,3 +444,40 @@ test('multiple https servers', async function (t) {
     evilDNS.clear();
   }
 });
+
+async function testSni(t, sniConfig, hostNames) {
+  t.plan(1);
+
+  let httpsServer;
+  try {
+    const servers = await createServersAsync({
+      https: {
+        port: 3456,
+        root: path.join(__dirname, 'fixtures'),
+        sni: sniConfig
+      },
+      handler: (req, res) => {
+        res.write('Hello');
+        res.end();
+      }
+    });
+    httpsServer = servers.https;
+
+    hostNames.forEach(host => evilDNS.add(host, '0.0.0.0'));
+
+    const responses = await Promise.all(
+      hostNames.map(hostname => download(`https://${hostname}:3456/`))
+    );
+
+    t.equals(
+      responses.every(str => str === 'Hello'),
+      true,
+      'responses are as expected'
+    );
+  } catch (err) {
+    return void t.error(err);
+  } finally {
+    httpsServer && httpsServer.close();
+    evilDNS.clear();
+  }
+}

@@ -225,7 +225,7 @@ function getSNIHandler(sslOpts) {
 
   // Pre-compile regexps for the hostname
   var hostRegexps = sniHosts.map(function(host) {
-    return new RegExp(
+    return host === '*' ? /.*/ : new RegExp(
       '^' +
       host
         .replace('.', '\\.') // Match dots, not wildcards
