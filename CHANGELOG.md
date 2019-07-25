@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.1.0
+
+- [#23], @DullReferenceException Support "*" for SNI host pattern
+
 ## 3.0.1
 
 - [#22] Return value compatibility. Do no return `null` valued keys.
