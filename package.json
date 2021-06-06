@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "evil-dns": "^0.2.0",
-    "sinon": "^5.0.7",
+    "sinon": "^11.0.0",
     "tape": "~4.9.0"
   }
 }
