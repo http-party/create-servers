@@ -90,7 +90,7 @@ function normalizeOptions(options) {
   const http2 = normalizeHttpsOptions(options.http2, options);
 
   if (!http && !https && !http2) {
-    throw new Error('http and/or https are required options');
+    throw new Error('http, https, and/or http2 are required options');
   }
 
   return {
