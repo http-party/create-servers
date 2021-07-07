@@ -32,6 +32,7 @@ a node-style callback. The config object must have at minimum an `http` or
 | `https.*`                | Any other properties supported by [https.createServer](https://nodejs.org/dist/latest-v8.x/docs/api/https.html#https_https_createserver_options_requestlistener) can be added to the https object, except `secureProtocol` and `secureOptions` which are set to recommended values.   |
 | `http2`                  | Optional object. If present, an HTTP/2 server is started. You may start multiple HTTP/2 servers by passing an array of objects                                                                                                                                                        |
 | `http2.allowHTTP1`       | Enable [ALPN negotiation] allowing support for both HTTPS and HTTP/2 on the same socket.                                                                                                                                                                                              |
+| `http2.*`                | Any other properties supported by [http2.createSecureServer](https://nodejs.org/dist/latest-v8.x/docs/api/http2.html#http2_http2_createsecureserver_options_onrequesthandler).                                                                                                        |
 
 If successful, the `create-servers` callback is passed an object with the
 following properties:
