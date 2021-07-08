@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.2.0
+
+- [#37] Support HTTP2
+
 ## 3.1.0
 
 - [#23], @DullReferenceException Support "*" for SNI host pattern
