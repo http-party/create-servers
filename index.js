@@ -8,8 +8,6 @@
  */
 
 var fs = require('fs'),
-  http = require('http'),
-  https = require('https'),
   tls = require('tls'),
   path = require('path'),
   constants = require('constants'),
@@ -51,23 +49,29 @@ module.exports = async function createServers(options, listening) {
     return listening(err);
   }
 
-  const [[httpErr, http], [httpsErr, https]] = await Promise.all([
+  const [
+    [httpErr, http],
+    [httpsErr, https],
+    [http2Err, http2]] = await Promise.all([
     createHttp(options.http, options.log),
-    createHttps(options.https, options.log)
+    createHttps(options.https, options.log),
+    createHttps(options.http2, options.log, true)
   ]);
 
   const servers = {};
   if (http) servers.http = http;
   if (https) servers.https = https;
+  if (http2) servers.http2 = http2;
 
-  if (httpErr || httpsErr) {
-    let errorSource = httpsErr || httpErr;
+  if (httpErr || httpsErr || http2Err) {
+    let errorSource = http2Err || httpsErr || httpErr;
     if (Array.isArray(errorSource)) {
       errorSource = errorSource[0];
     }
     return listening(
       errs.create({
         message: errorSource && errorSource.message,
+        http2: http2Err,
         https: httpsErr,
         http: httpErr
       }),
@@ -81,14 +85,16 @@ module.exports = async function createServers(options, listening) {
 function normalizeOptions(options) {
   const http = normalizeHttpOptions(options.http, options);
   const https = normalizeHttpsOptions(options.https, options);
+  const http2 = normalizeHttpsOptions(options.http2, options);
 
-  if (!http && !https) {
-    throw new Error('http and/or https are required options');
+  if (!http && !https && !http2) {
+    throw new Error('http, https, and/or http2 are required options');
   }
 
   return {
     http,
     https,
+    http2,
     log: options.log || function() {}
   };
 }
@@ -284,7 +290,7 @@ async function createHttp(httpConfig, log) {
   }
 
   return await new Promise(resolve => {
-    var server = http.createServer(httpConfig.handler),
+    var server = require('http').createServer(httpConfig.handler),
       timeout = httpConfig.timeout,
       port = httpConfig.port,
       args;
@@ -308,14 +314,14 @@ async function createHttp(httpConfig, log) {
 // ### function createHttps ()
 // Attempts to create and listen on the HTTPS server.
 //
-async function createHttps(ssl, log) {
+async function createHttps(ssl, log, h2) {
   if (typeof ssl === 'undefined') {
     log('https | no options.https; no server');
     return [null, null];
   }
 
   if (Array.isArray(ssl)) {
-    return await createMultiple(createHttps, ssl, log);
+    return await createMultiple(createHttps, ssl, log, h2);
   }
 
   return await new Promise(resolve => {
@@ -350,7 +356,11 @@ async function createHttps(ssl, log) {
     }
 
     log('https | listening on %d', port);
-    server = https.createServer(finalHttpsOptions, ssl.handler);
+    if(h2) {
+      server = require('http2').createSecureServer(finalHttpsOptions, ssl.handler)
+    } else {
+      server = require('https').createServer(finalHttpsOptions, ssl.handler);
+    }
 
     if (typeof timeout === 'number') server.setTimeout(timeout);
     args = [server, port];
