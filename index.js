@@ -8,8 +8,6 @@
  */
 
 var fs = require('fs'),
-  http = require('http'),
-  https = require('https'),
   tls = require('tls'),
   path = require('path'),
   constants = require('constants'),
@@ -292,7 +290,7 @@ async function createHttp(httpConfig, log) {
   }
 
   return await new Promise(resolve => {
-    var server = http.createServer(httpConfig.handler),
+    var server = require('http').createServer(httpConfig.handler),
       timeout = httpConfig.timeout,
       port = httpConfig.port,
       args;
@@ -361,7 +359,7 @@ async function createHttps(ssl, log, h2) {
     if(h2) {
       server = require('http2').createSecureServer(finalHttpsOptions, ssl.handler)
     } else {
-      server = https.createServer(finalHttpsOptions, ssl.handler);
+      server = require('https').createServer(finalHttpsOptions, ssl.handler);
     }
 
     if (typeof timeout === 'number') server.setTimeout(timeout);
