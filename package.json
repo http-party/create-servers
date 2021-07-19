@@ -1,6 +1,6 @@
 {
   "name": "create-servers",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Create an http AND/OR an https server and call the same request handler.",
   "main": "index.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "object-assign": "^4.1.0"
   },
   "devDependencies": {
+    "@types/node": "^16.3.3",
     "evil-dns": "^0.2.0",
     "sinon": "^5.0.7",
     "tape": "~4.9.0"
