@@ -68,8 +68,6 @@ type Servers = {
 
 type Callback = (error?: Errors, servers?: Servers) => void;
 
-interface createServers {
-  (options: Options, callback: Callback): void
-}
+declare function createServers(options: Options, callback: Callback): void;
 
 export = createServers;
