@@ -173,6 +173,20 @@ test('only http, timeout', function (t) {
   });
 });
 
+test('keepAliveTimeout', function (t) {
+  t.plan(1);
+  const time = 3000000;
+  createServers({
+    log: console.log,
+    keepAliveTimeout: time,
+    http: 0,
+    handler: fend
+  }, function (err, servers) {
+    t.equals(servers.http.keepAliveTimeout, time);
+    servers.http.close();
+  });
+});
+
 test('only https', function (t) {
   t.plan(5);
   createServers({
