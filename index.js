@@ -293,20 +293,21 @@ async function createHttp(httpConfig, log) {
     return await createMultiple(createHttp, httpConfig, log);
   }
 
-  return await new Promise((resolve, reject) => {
-    var server = require('http').createServer(httpConfig.handler),
-      timeout = httpConfig.timeout,
-      port = httpConfig.port,
-      args;
+  const
+    server = require('http').createServer(httpConfig.handler),
+    timeout = httpConfig.timeout,
+    port = httpConfig.port;
 
-    if (typeof timeout === 'number') server.setTimeout(timeout);
+  if (typeof timeout === 'number') server.setTimeout(timeout);
 
-    args = [server, port];
-    if (httpConfig.host) {
-      args.push(httpConfig.host);
-    }
+  const args = [server, port];
+  if (httpConfig.host) {
+    args.push(httpConfig.host);
+  }
 
-    log('http | try listen ' + port);
+  log('http | try listen ' + port);
+
+  return new Promise((resolve, reject) => {
     args.push(function listener(err) {
       err ? reject(err) : resolve(server);
     });
@@ -328,54 +329,48 @@ async function createHttps(ssl, log, h2) {
     return await createMultiple(createHttps, ssl, log, h2);
   }
 
-  let
-    port = ssl.port,
-    timeout = ssl.timeout,
-    server,
-    args;
-
   const [key, cert, ca] = await Promise.all([
     normalizePEMContent(ssl.root, ssl.key),
     normalizeCertContent(ssl.root, ssl.cert, ssl.key),
     normalizeCA(ssl.root, ssl.ca)
   ]);
 
-  return await new Promise(async (resolve, reject) => {
-    const finalHttpsOptions = assign({}, ssl, {
-      key,
-      cert,
-      ca,
-      //
-      // Properly expose ciphers for an A+ SSL rating:
-      // https://certsimple.com/blog/a-plus-node-js-ssl
-      //
-      ciphers: normalizeCiphers(ssl.ciphers),
-      honorCipherOrder: !!ssl.honorCipherOrder,
-      //
-      // Protect against the POODLE attack by disabling SSLv3
-      // @see http://googleonlinesecurity.blogspot.nl/2014/10/this-poodle-bites-exploiting-ssl-30.html
-      //
-      secureProtocol: 'SSLv23_method',
-      secureOptions: secureOptions
-    });
+  const finalHttpsOptions = assign({}, ssl, {
+    key,
+    cert,
+    ca,
+    //
+    // Properly expose ciphers for an A+ SSL rating:
+    // https://certsimple.com/blog/a-plus-node-js-ssl
+    //
+    ciphers: normalizeCiphers(ssl.ciphers),
+    honorCipherOrder: !!ssl.honorCipherOrder,
+    //
+    // Protect against the POODLE attack by disabling SSLv3
+    // @see http://googleonlinesecurity.blogspot.nl/2014/10/this-poodle-bites-exploiting-ssl-30.html
+    //
+    secureProtocol: 'SSLv23_method',
+    secureOptions: secureOptions
+  });
 
-    if (ssl.sni && !finalHttpsOptions.SNICallback) {
-      finalHttpsOptions.SNICallback = await getSNIHandler(ssl);
-    }
+  if (ssl.sni && !finalHttpsOptions.SNICallback) {
+    finalHttpsOptions.SNICallback = await getSNIHandler(ssl);
+  }
 
-    log('https | listening on %d', port);
-    if(h2) {
-      server = require('http2').createSecureServer(finalHttpsOptions, ssl.handler)
-    } else {
-      server = require('https').createServer(finalHttpsOptions, ssl.handler);
-    }
+  const port = ssl.port;
+  log('https | listening on %d', port);
+  const server = h2
+    ? require('http2').createSecureServer(finalHttpsOptions, ssl.handler)
+    : require('https').createServer(finalHttpsOptions, ssl.handler);
 
-    if (typeof timeout === 'number') server.setTimeout(timeout);
-    args = [server, port];
-    if (ssl.host) {
-      args.push(ssl.host);
-    }
+  const timeout = ssl.timeout;
+  if (typeof timeout === 'number') server.setTimeout(timeout);
+  const args = [server, port];
+  if (ssl.host) {
+    args.push(ssl.host);
+  }
 
+  return new Promise((resolve, reject) => {
     args.push(function listener(err) {
       err ? reject(err) : resolve(server);
     });
