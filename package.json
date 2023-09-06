@@ -1,9 +1,11 @@
 {
   "name": "create-servers",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Create an http AND/OR an https server and call the same request handler.",
   "main": "index.js",
-  "files": ["./index.js"],
+  "files": [
+    "./index.js"
+  ],
   "scripts": {
     "test": "node test/create-servers-test.js"
   },
