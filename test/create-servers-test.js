@@ -194,7 +194,7 @@ test('only https', function (t) {
   });
 });
 
-test('only https', function (t) {
+test('only https with timeout', function (t) {
   t.plan(4);
   var time = 4000000;
   createServers({
@@ -213,6 +213,23 @@ test('only https', function (t) {
     t.equals(typeof servers.https, 'object');
     t.equals(servers.https.timeout, time);
     servers.https.close();
+  });
+});
+
+test('catches cert file reading errors', function (t) {
+  t.plan(2);
+  createServers({
+    log: console.log,
+    https: {
+      port: 3456,
+      root: path.join(__dirname, 'fixtures'),
+      key: 'missing-example-org-key.pem',
+      cert: 'example-org-cert.pem'
+    },
+    handler: fend
+  }, function (err) {
+    t.doesNotEqual(err, null);
+    t.doesNotEqual(err, undefined);
   });
 });
 

@@ -7,7 +7,8 @@
  *
  */
 
-var fs = require('fs'),
+const
+  fs = require('fs').promises,
   tls = require('tls'),
   path = require('path'),
   constants = require('constants'),
@@ -15,9 +16,9 @@ var fs = require('fs'),
   errs = require('errs'),
   assign = require('object-assign');
 
-var pemFormat = /-----BEGIN/;
+const pemFormat = /-----BEGIN/;
 
-var CIPHERS = [
+const CIPHERS = [
   'ECDHE-RSA-AES256-SHA384',
   'DHE-RSA-AES256-SHA384',
   'ECDHE-RSA-AES256-SHA256',
@@ -36,7 +37,7 @@ var CIPHERS = [
   '!CAMELLIA'
 ].join(':');
 
-var secureOptions = constants.SSL_OP_NO_SSLv3;
+const secureOptions = constants.SSL_OP_NO_SSLv3;
 
 /**
  * function createServers (dispatch, options, callback)
@@ -49,31 +50,28 @@ module.exports = async function createServers(options, listening) {
     return listening(err);
   }
 
-  const [
-    [httpErr, http],
-    [httpsErr, https],
-    [http2Err, http2]] = await Promise.all([
+  const [httpResult, httpsResult, http2Result] = await Promise.allSettled([
     createHttp(options.http, options.log),
     createHttps(options.https, options.log),
     createHttps(options.http2, options.log, true)
-  ]);
+  ])
 
   const servers = {};
-  if (http) servers.http = http;
-  if (https) servers.https = https;
-  if (http2) servers.http2 = http2;
+  if (httpResult.value) servers.http = httpResult.value;
+  if (httpsResult.value) servers.https = httpsResult.value;
+  if (http2Result.value) servers.http2 = http2Result.value;
 
-  if (httpErr || httpsErr || http2Err) {
-    let errorSource = http2Err || httpsErr || httpErr;
+  const errorSource = httpResult.reason || httpsResult.reason || http2Result.reason;
+  if (errorSource) {
     if (Array.isArray(errorSource)) {
       errorSource = errorSource[0];
     }
     return listening(
       errs.create({
         message: errorSource && errorSource.message,
-        http2: http2Err,
-        https: httpsErr,
-        http: httpErr
+        http2: http2Result.reason,
+        https: httpsResult.reason,
+        http: httpResult.reason
       }),
       servers
     );
@@ -172,17 +170,17 @@ function normalizeCertChainList(root, data) {
   // If this is an array, treat like an array of bundles, otherwise a single
   // bundle
   return Array.isArray(data)
-    ? data.map(function(item) {
+    ? Promise.all(data.map(function(item) {
         return normalizeCertChain(root, item);
-      })
+      }))
     : normalizePEMContent(root, data);
 }
 
-function normalizeCertChain(root, data) {
+async function normalizeCertChain(root, data) {
   // A chain can be an array, which we concatenate together into one PEM,
   // an already-concatenated chain, or a single PEM
 
-  const content = normalizePEMContent(root, data);
+  const content = await normalizePEMContent(root, data);
   return Array.isArray(content) ? content.join('\n') : content;
 }
 
@@ -190,7 +188,7 @@ function normalizeCA(root, ca) {
   if (ca && !Array.isArray(ca)) {
     ca = [ca];
   }
-  return ca && ca.map(normalizePEMContent.bind(null, root));
+  return ca && Promise.all(ca.map(normalizePEMContent.bind(null, root)));
 }
 
 /**
@@ -201,9 +199,9 @@ function normalizeCA(root, ca) {
  */
 function normalizePEMContent(root, file) {
   if (Array.isArray(file))
-    return file.map(function map(item) {
+    return Promise.all(file.map(function map(item) {
       return normalizePEMContent(root, item);
-    });
+    }));
 
   //
   // Assumption that this is a Buffer, a PEM file, or something broken
@@ -212,7 +210,7 @@ function normalizePEMContent(root, file) {
     return file;
   }
 
-  return fs.readFileSync(path.resolve(root, file));
+  return fs.readFile(path.resolve(root, file));
 }
 
 function normalizeCiphers(ciphers) {
@@ -226,11 +224,11 @@ function normalizeCiphers(ciphers) {
   return ciphers;
 }
 
-function getSNIHandler(sslOpts) {
-  var sniHosts = Object.keys(sslOpts.sni);
+async function getSNIHandler(sslOpts) {
+  const sniHosts = Object.keys(sslOpts.sni);
 
   // Pre-compile regexps for the hostname
-  var hostRegexps = sniHosts.map(function(host) {
+  const hostRegexps = sniHosts.map(function(host) {
     return host === '*' ? /.*/ : new RegExp(
       '^' +
       host
@@ -242,16 +240,22 @@ function getSNIHandler(sslOpts) {
   });
 
   // Prepare secure contexts ahead-of-time
-  var hostSecureContexts = sniHosts.map(function(host) {
+  const hostSecureContexts = await Promise.all(sniHosts.map(async function(host) {
     var hostOpts = sslOpts.sni[host];
 
     var root = hostOpts.root || sslOpts.root;
 
+    const [key, cert, ca] = await Promise.all([
+      normalizePEMContent(root, hostOpts.key),
+      normalizeCertContent(root, hostOpts.cert),
+      normalizeCA(root, hostOpts.ca || sslOpts.ca)
+    ])
+
     return tls.createSecureContext(
       assign({}, sslOpts, hostOpts, {
-        key: normalizePEMContent(root, hostOpts.key),
-        cert: normalizeCertContent(root, hostOpts.cert),
-        ca: normalizeCA(root, hostOpts.ca || sslOpts.ca),
+        key,
+        cert,
+        ca,
         ciphers: normalizeCiphers(hostOpts.ciphers || sslOpts.ciphers),
         honorCipherOrder: !!(
           hostOpts.honorCipherOrder || sslOpts.honorCipherOrder
@@ -260,7 +264,7 @@ function getSNIHandler(sslOpts) {
         secureOptions: secureOptions
       })
     );
-  });
+  }));
 
   return function(hostname, cb) {
     var matchingHostIdx = sniHosts.findIndex(function(candidate, i) {
@@ -282,29 +286,30 @@ function getSNIHandler(sslOpts) {
 async function createHttp(httpConfig, log) {
   if (typeof httpConfig === 'undefined') {
     log('http | no options.http; no server');
-    return [null, null];
+    return null;
   }
 
   if (Array.isArray(httpConfig)) {
     return await createMultiple(createHttp, httpConfig, log);
   }
 
-  return await new Promise(resolve => {
-    var server = require('http').createServer(httpConfig.handler),
-      timeout = httpConfig.timeout,
-      port = httpConfig.port,
-      args;
+  const
+    server = require('http').createServer(httpConfig.handler),
+    timeout = httpConfig.timeout,
+    port = httpConfig.port;
 
-    if (typeof timeout === 'number') server.setTimeout(timeout);
+  if (typeof timeout === 'number') server.setTimeout(timeout);
 
-    args = [server, port];
-    if (httpConfig.host) {
-      args.push(httpConfig.host);
-    }
+  const args = [server, port];
+  if (httpConfig.host) {
+    args.push(httpConfig.host);
+  }
 
-    log('http | try listen ' + port);
+  log('http | try listen ' + port);
+
+  return new Promise((resolve, reject) => {
     args.push(function listener(err) {
-      resolve([err, server]);
+      err ? reject(err) : resolve(server);
     });
     connected.apply(null, args);
   });
@@ -317,73 +322,76 @@ async function createHttp(httpConfig, log) {
 async function createHttps(ssl, log, h2) {
   if (typeof ssl === 'undefined') {
     log('https | no options.https; no server');
-    return [null, null];
+    return null;
   }
 
   if (Array.isArray(ssl)) {
     return await createMultiple(createHttps, ssl, log, h2);
   }
 
-  return await new Promise(resolve => {
-    var port = ssl.port,
-      timeout = ssl.timeout,
-      server,
-      args;
+  const [key, cert, ca] = await Promise.all([
+    normalizePEMContent(ssl.root, ssl.key),
+    normalizeCertContent(ssl.root, ssl.cert, ssl.key),
+    normalizeCA(ssl.root, ssl.ca)
+  ]);
 
-    var finalHttpsOptions = assign({}, ssl, {
-      //
-      // Load default SSL key, cert and ca(s).
-      //
-      key: normalizePEMContent(ssl.root, ssl.key),
-      cert: normalizeCertContent(ssl.root, ssl.cert, ssl.key),
-      ca: normalizeCA(ssl.root, ssl.ca),
-      //
-      // Properly expose ciphers for an A+ SSL rating:
-      // https://certsimple.com/blog/a-plus-node-js-ssl
-      //
-      ciphers: normalizeCiphers(ssl.ciphers),
-      honorCipherOrder: !!ssl.honorCipherOrder,
-      //
-      // Protect against the POODLE attack by disabling SSLv3
-      // @see http://googleonlinesecurity.blogspot.nl/2014/10/this-poodle-bites-exploiting-ssl-30.html
-      //
-      secureProtocol: 'SSLv23_method',
-      secureOptions: secureOptions
-    });
+  const finalHttpsOptions = assign({}, ssl, {
+    key,
+    cert,
+    ca,
+    //
+    // Properly expose ciphers for an A+ SSL rating:
+    // https://certsimple.com/blog/a-plus-node-js-ssl
+    //
+    ciphers: normalizeCiphers(ssl.ciphers),
+    honorCipherOrder: !!ssl.honorCipherOrder,
+    //
+    // Protect against the POODLE attack by disabling SSLv3
+    // @see http://googleonlinesecurity.blogspot.nl/2014/10/this-poodle-bites-exploiting-ssl-30.html
+    //
+    secureProtocol: 'SSLv23_method',
+    secureOptions: secureOptions
+  });
 
-    if (ssl.sni && !finalHttpsOptions.SNICallback) {
-      finalHttpsOptions.SNICallback = getSNIHandler(ssl);
-    }
+  if (ssl.sni && !finalHttpsOptions.SNICallback) {
+    finalHttpsOptions.SNICallback = await getSNIHandler(ssl);
+  }
 
-    log('https | listening on %d', port);
-    if(h2) {
-      server = require('http2').createSecureServer(finalHttpsOptions, ssl.handler)
-    } else {
-      server = require('https').createServer(finalHttpsOptions, ssl.handler);
-    }
+  const port = ssl.port;
+  log('https | listening on %d', port);
+  const server = h2
+    ? require('http2').createSecureServer(finalHttpsOptions, ssl.handler)
+    : require('https').createServer(finalHttpsOptions, ssl.handler);
 
-    if (typeof timeout === 'number') server.setTimeout(timeout);
-    args = [server, port];
-    if (ssl.host) {
-      args.push(ssl.host);
-    }
+  const timeout = ssl.timeout;
+  if (typeof timeout === 'number') server.setTimeout(timeout);
+  const args = [server, port];
+  if (ssl.host) {
+    args.push(ssl.host);
+  }
 
+  return new Promise((resolve, reject) => {
     args.push(function listener(err) {
-      resolve([err, server]);
+      err ? reject(err) : resolve(server);
     });
     connected.apply(null, args);
   });
 }
 
 async function createMultiple(createFn, configArray, log) {
-  const errorsOrServers = await Promise.all(
+  const errorsOrServers = await Promise.allSettled(
     configArray.map(cfg => createFn(cfg, log))
   );
-  const errors = [],
-    servers = [];
-  for (const [error, server] of errorsOrServers) {
-    error && errors.push(error);
-    server && servers.push(server);
+
+  const errors = [], servers = [];
+  for (const result of errorsOrServers) {
+    result.reason && errors.push(result.reason);
+    result.value && servers.push(result.value);
   }
-  return [errors.length ? errors : null, servers];
+
+  if (errors.length) {
+    throw errors;
+  } else {
+    return servers;
+  }
 }
