@@ -32,6 +32,6 @@
   "devDependencies": {
     "evil-dns": "^0.2.0",
     "sinon": "^5.0.7",
-    "tape": "~4.9.0"
+    "tape": "~5.7.0"
   }
 }
