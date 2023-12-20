@@ -116,7 +116,8 @@ function normalizeHttpOptions(httpConfig, baseConfig) {
     host: httpConfig.host || baseConfig.host,
     port: +port,
     handler: httpConfig.handler || baseConfig.handler,
-    timeout: httpConfig.timeout || baseConfig.timeout
+    timeout: httpConfig.timeout || baseConfig.timeout,
+    keepAliveTimeout: httpConfig.keepAliveTimeout || baseConfig.keepAliveTimeout
   };
 
   if (!http.handler) {
@@ -138,7 +139,8 @@ function normalizeHttpsOptions(httpsConfig, baseConfig) {
     host: httpsConfig.host || baseConfig.host,
     port: +('port' in httpsConfig ? httpsConfig.port : 443),
     handler: httpsConfig.handler || baseConfig.handler,
-    timeout: httpsConfig.timeout || baseConfig.timeout
+    timeout: httpsConfig.timeout || baseConfig.timeout,
+    keepAliveTimeout: httpsConfig.keepAliveTimeout || baseConfig.keepAliveTimeout
   };
 
   if (!https.handler) {
@@ -295,10 +297,9 @@ async function createHttp(httpConfig, log) {
 
   const
     server = require('http').createServer(httpConfig.handler),
-    timeout = httpConfig.timeout,
     port = httpConfig.port;
 
-  if (typeof timeout === 'number') server.setTimeout(timeout);
+  commonPostCreateSetup(httpConfig, server);
 
   const args = [server, port];
   if (httpConfig.host) {
@@ -363,8 +364,7 @@ async function createHttps(ssl, log, h2) {
     ? require('http2').createSecureServer(finalHttpsOptions, ssl.handler)
     : require('https').createServer(finalHttpsOptions, ssl.handler);
 
-  const timeout = ssl.timeout;
-  if (typeof timeout === 'number') server.setTimeout(timeout);
+  commonPostCreateSetup(ssl, server);
   const args = [server, port];
   if (ssl.host) {
     args.push(ssl.host);
@@ -393,5 +393,14 @@ async function createMultiple(createFn, configArray, log) {
     throw errors;
   } else {
     return servers;
+  }
+}
+
+function commonPostCreateSetup({ timeout, keepAliveTimeout }, server) {
+  if (typeof timeout === 'number') {
+    server.setTimeout(timeout);
+  }
+  if (typeof keepAliveTimeout === 'number') {
+    server.keepAliveTimeout = keepAliveTimeout;
   }
 }

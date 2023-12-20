@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.3.0
+
+- Support `keepAliveTimeout`
+
 ## 3.2.1
 
 - [#50] Fix bug where cert file reading errors do not surface
