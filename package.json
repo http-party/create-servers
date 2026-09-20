@@ -26,7 +26,7 @@
   "homepage": "https://github.com/http-party/create-servers",
   "dependencies": {
     "connected": "~0.0.2",
-    "errs": "~0.3.0",
+    "errs": "~1.0.0",
     "object-assign": "^4.1.0"
   },
   "devDependencies": {
